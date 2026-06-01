@@ -1,3 +1,2 @@
-from django.db import models
-
-# Create your models here.
+# Reports app uses no models of its own.
+# It queries Order, Invoice, MenuItem data for analytics.
