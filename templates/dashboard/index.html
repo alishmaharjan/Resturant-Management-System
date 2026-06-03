@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard · Yasumi{% endblock %}
+{% block nav_dash %}active{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0" style="color:#1a1a1a">Dashboard</h4>
+  <span class="text-muted small">{% now "l, d M Y" %}</span>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card p-3" style="border-left:4px solid #c0392b">
+      <div class="text-muted small">Total Tables</div>
+      <div class="fs-2 fw-bold">{{ total_tables }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card p-3" style="border-left:4px solid #e74c3c">
+      <div class="text-muted small">Occupied</div>
+      <div class="fs-2 fw-bold text-danger">{{ occupied_tables }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card p-3" style="border-left:4px solid #e67e22">
+      <div class="text-muted small">Active Orders</div>
+      <div class="fs-2 fw-bold" style="color:#e67e22">{{ active_orders }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card stat-card p-3" style="border-left:4px solid #27ae60">
+      <div class="text-muted small">Today's Revenue</div>
+      <div class="fs-2 fw-bold text-success">Rs. {{ today_revenue }}</div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Recent Orders</span>
+    <a href="/orders/" style="color:#c0392b;font-size:0.85rem">View all →</a>
+  </div>
+  <table class="table mb-0">
+    <thead class="table-light">
+      <tr><th>#</th><th>Table</th><th>Status</th><th>Total</th><th>Time</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for order in recent_orders %}
+      <tr>
+        <td class="fw-semibold">#{{ order.id }}</td>
+        <td>Table {{ order.table.number }}</td>
+        <td><span class="badge rounded-pill
+          {% if order.status == 'pending' %}bg-warning text-dark
+          {% elif order.status == 'preparing' %}bg-info text-dark
+          {% elif order.status == 'served' %}bg-primary
+          {% elif order.status == 'completed' %}bg-success
+          {% else %}bg-secondary{% endif %}">
+          {{ order.get_status_display }}</span>
+        </td>
+        <td>Rs. {{ order.get_total }}</td>
+        <td class="text-muted">{{ order.created_at|time:"H:i" }}</td>
+        <td><a href="/orders/{{ order.id }}/" class="btn btn-sm btn-yasumi">View</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No orders yet today</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Invoice #{{ invoice.id }}{% endblock %}
+{% block nav_billing %}active{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4>Invoice #{{ invoice.id }}</h4>
+  <a href="/billing/" class="btn btn-outline-secondary">← Back</a>
+</div>
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Order #{{ invoice.order.id }} — Table {{ invoice.order.table.number }}</div>
+      <table class="table mb-0">
+        <thead class="table-light"><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+        <tbody>
+        {% for item in invoice.order.items.all %}
+        <tr>
+          <td>{{ item.menu_item.name }}</td>
+          <td>Rs. {{ item.price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>Rs. {{ item.get_subtotal }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div class="card-footer">
+        <div class="d-flex justify-content-end">
+          <table style="width:220px">
+            <tr><td>Subtotal</td><td class="text-end">Rs. {{ invoice.get_subtotal }}</td></tr>
+            <tr><td>Tax ({{ invoice.tax_percent }}%)</td><td class="text-end">Rs. {{ invoice.get_tax_amount }}</td></tr>
+            <tr><td>Discount</td><td class="text-end">Rs. {{ invoice.discount }}</td></tr>
+            <tr class="fw-bold"><td>Grand Total</td><td class="text-end">Rs. {{ invoice.get_grand_total }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    {% if invoice.status == 'unpaid' %}
+    <div class="card">
+      <div class="card-header fw-bold">Process Payment</div>
+      <div class="card-body">
+        <form method="post" action="/billing/{{ invoice.pk }}/pay/">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Payment Method</label>
+            <select name="payment_method" class="form-select">
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="esewa">eSewa</option>
+              <option value="khalti">Khalti</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Discount (Rs.)</label>
+            <input type="number" name="discount" value="0" min="0" class="form-control">
+          </div>
+          <button class="btn btn-success w-100">Mark as Paid ✓</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+      ✅ Paid via {{ invoice.get_payment_method_display }}<br>
+      <small>{{ invoice.paid_at }}</small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

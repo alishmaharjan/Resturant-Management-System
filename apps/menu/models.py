@@ -1,10 +1,13 @@
 from django.db import models
+from django.utils import timezone
+
 
 class Category(models.Model):
     name      = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        ordering = ['name']
         verbose_name_plural = 'Categories'
 
     def __str__(self):
@@ -12,13 +15,15 @@ class Category(models.Model):
 
 
 class MenuItem(models.Model):
-    category     = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='items')
-    name         = models.CharField(max_length=200)
-    description  = models.TextField(blank=True)
-    price        = models.DecimalField(max_digits=8, decimal_places=2)
-    image        = models.ImageField(upload_to='menu/', blank=True, null=True)
-    is_available = models.BooleanField(default=True)
-    created_at   = models.DateTimeField(auto_now_add=True)
+    name        = models.CharField(max_length=150)
+    category    = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
+    price       = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=13)
+    is_available= models.BooleanField(default=True)
+    created_at  = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
-        return f"{self.name} - Rs.{self.price}"
+        return self.name

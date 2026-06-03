@@ -14,3 +14,6 @@ DATABASES = {
         'PORT': config('DB_PORT', default='5432'),
     }
 }
+
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}New Order{% endblock %}
+{% block nav_orders %}active{% endblock %}
+{% block content %}
+<h4 class="mb-4">New Order</h4>
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card mb-3">
+        <div class="card-header fw-bold">Select Table</div>
+        <div class="card-body">
+          <select name="table" class="form-select" required>
+            <option value="">-- Select Table --</option>
+            {% for table in tables %}
+            <option value="{{ table.pk }}">Table {{ table.number }} ({{ table.capacity }} seats)</option>
+            {% endfor %}
+          </select>
+          <div class="mt-3">
+            <label class="form-label">Note</label>
+            <textarea name="note" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary w-100">Place Order</button>
+    </div>
+    <div class="col-md-8">
+      {% for category in categories %}
+      <div class="card mb-3">
+        <div class="card-header fw-bold">{{ category.name }}</div>
+        <div class="card-body">
+          {% for item in category.items.all %}
+          {% if item.is_available %}
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <span class="fw-semibold">{{ item.name }}</span>
+              <span class="text-muted ms-2">Rs. {{ item.price }}</span>
+            </div>
+            <div style="width:80px">
+              <input type="hidden" name="item_id" value="{{ item.pk }}">
+              <input type="number" name="quantity" value="0" min="0" max="20" class="form-control form-control-sm text-center">
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</form>
+{% endblock %}

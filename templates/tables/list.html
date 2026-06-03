@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Tables · Yasumi{% endblock %}
+{% block nav_tables %}active{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0">Tables</h4>
+  <div class="d-flex gap-2">
+    <span class="badge bg-success px-3 py-2">Available</span>
+    <span class="badge bg-danger px-3 py-2">Occupied</span>
+    <span class="badge bg-warning text-dark px-3 py-2">Reserved</span>
+  </div>
+</div>
+<div class="row g-3">
+{% for table in tables %}
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="card text-center p-3 h-100"
+      style="border-top: 4px solid
+        {% if table.status == 'available' %}#27ae60
+        {% elif table.status == 'occupied' %}#c0392b
+        {% else %}#f39c12{% endif %}">
+      <div style="font-size:2rem">🍱</div>
+      <div class="fw-bold fs-5">Table {{ table.number }}</div>
+      <div class="text-muted small mb-2">{{ table.capacity }} seats</div>
+      <span class="badge mb-2
+        {% if table.status == 'available' %}bg-success
+        {% elif table.status == 'occupied' %}bg-danger
+        {% else %}bg-warning text-dark{% endif %}">
+        {{ table.get_status_display }}
+      </span>
+      <form method="post" action="/tables/{{ table.pk }}/status/">
+        {% csrf_token %}
+        <select name="status" class="form-select form-select-sm mb-2">
+          <option value="available" {% if table.status == 'available' %}selected{% endif %}>Available</option>
+          <option value="occupied"  {% if table.status == 'occupied'  %}selected{% endif %}>Occupied</option>
+          <option value="reserved"  {% if table.status == 'reserved'  %}selected{% endif %}>Reserved</option>
+        </select>
+        <button class="btn btn-sm btn-yasumi w-100">Update</button>
+      </form>
+    </div>
+  </div>
+{% empty %}
+  <div class="col-12 text-center text-muted py-5">No tables added yet. Add them from <a href="/admin/">Admin</a>.</div>
+{% endfor %}
+</div>
+{% endblock %}

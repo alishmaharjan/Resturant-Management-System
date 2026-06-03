@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+{% block nav_orders %}active{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4>Order #{{ order.id }} — Table {{ order.table.number }}</h4>
+  <a href="/orders/" class="btn btn-outline-secondary">← Back</a>
+</div>
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Items</div>
+      <table class="table mb-0">
+        <thead class="table-light"><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+        <tbody>
+        {% for item in order.items.all %}
+        <tr>
+          <td>{{ item.menu_item.name }}</td>
+          <td>Rs. {{ item.price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>Rs. {{ item.get_subtotal }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="fw-bold">
+          <td colspan="3" class="text-end">Total</td>
+          <td>Rs. {{ order.get_total }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    {% if order.note %}
+    <div class="alert alert-info">📝 {{ order.note }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header fw-bold">Update Status</div>
+      <div class="card-body">
+        <form method="post" action="/orders/{{ order.pk }}/status/">
+          {% csrf_token %}
+          <select name="status" class="form-select mb-2">
+            {% for val, label in order.Status.choices %}
+            <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary w-100">Update</button>
+        </form>
+      </div>
+    </div>
+    {% if order.status == 'served' %}
+    <a href="/billing/create/{{ order.pk }}/" class="btn btn-success w-100">Generate Invoice</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
