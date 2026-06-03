@@ -1,30 +1,119 @@
 {% extends 'base.html' %}
-{% block title %}Menu{% endblock %}
+{% block title %}Menu · 休み Yasumi{% endblock %}
 {% block nav_menu %}active{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4>Menu</h4>
-  <a href="/menu/add/" class="btn btn-primary"><i class="bi bi-plus"></i> Add Item</a>
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-journal-text text-torii" style="margin-right:8px;"></i>Menu Management</h1>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'category_add' %}" class="btn btn-yasumi btn-sm"><i class="bi bi-folder-plus"></i> Add Category</a>
+    <a href="{% url 'item_add' %}"     class="btn btn-yasumi btn-sm"><i class="bi bi-plus-lg"></i> Add Item</a>
+  </div>
 </div>
-{% for category in categories %}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-silver);">
+      <div class="stat-label"><i class="bi bi-folder2"></i> Categories</div>
+      <div class="stat-value">{{ categories|length }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-gold);">
+      <div class="stat-label"><i class="bi bi-list-ul"></i> Total Items</div>
+      <div class="stat-value" style="color:var(--jp-gold);">{{ total_items }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-matcha-lt);">
+      <div class="stat-label"><i class="bi bi-check-circle"></i> Available</div>
+      <div class="stat-value" style="color:var(--jp-matcha-lt);">{{ avail_items }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Categories + Items -->
+{% for cat in categories %}
 <div class="card mb-3">
-  <div class="card-header fw-bold">{{ category.name }}</div>
-  <table class="table mb-0">
-    <thead class="table-light"><tr><th>Name</th><th>Price</th><th>Available</th><th></th></tr></thead>
-    <tbody>
-    {% for item in category.items.all %}
-    <tr>
-      <td>{{ item.name }}</td>
-      <td>Rs. {{ item.price }}</td>
-      <td>{% if item.is_available %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
-      <td>
-        <a href="/menu/{{ item.pk }}/edit/" class="btn btn-sm btn-outline-primary">Edit</a>
-        <a href="/menu/{{ item.pk }}/delete/" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')">Delete</a>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-weight:700;font-size:.9rem;">{{ cat.name }}</span>
+      <span class="badge" style="{% if cat.is_active %}background:rgba(42,92,62,.2);color:#5daa80;{% else %}background:rgba(80,80,90,.2);color:#888;{% endif %}padding:3px 8px;border-radius:3px;font-size:.68rem;">
+        {% if cat.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+      <span style="color:var(--jp-mist);font-size:.75rem;">{{ cat.products.count }} items</span>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <form method="post" action="{% url 'category_toggle' cat.pk %}" style="display:inline;">{% csrf_token %}
+        <button class="btn btn-sm" style="background:rgba(200,151,43,.1);color:var(--jp-gold);border:1px solid rgba(200,151,43,.3);font-size:.75rem;" title="Toggle">
+          <i class="bi bi-toggle-{% if cat.is_active %}on{% else %}off{% endif %}"></i>
+        </button>
+      </form>
+      <a href="{% url 'category_edit' cat.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;"><i class="bi bi-pencil"></i></a>
+      <form method="post" action="{% url 'category_delete' cat.pk %}" style="display:inline;"
+            onsubmit="return confirm('Delete category « {{ cat.name }} » and all its items?')">{% csrf_token %}
+        <button class="btn btn-sm btn-outline-danger" style="font-size:.75rem;"><i class="bi bi-trash"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.85rem;">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Price (Rs.)</th>
+          <th>Tax %</th>
+          <th>Status</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cat.products.all %}
+        <tr>
+          <td style="font-weight:500;">{{ item.name }}</td>
+          <td class="text-gold">{{ item.price }}</td>
+          <td class="text-muted">{{ item.tax_percent }}%</td>
+          <td>
+            {% if item.is_available %}
+              <span style="color:#5daa80;font-size:.75rem;"><i class="bi bi-check-circle-fill"></i> Available</span>
+            {% else %}
+              <span style="color:#e07070;font-size:.75rem;"><i class="bi bi-x-circle-fill"></i> Sold Out</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;">
+            <form method="post" action="{% url 'item_toggle' item.pk %}" style="display:inline;">{% csrf_token %}
+              <button class="btn btn-sm" title="Toggle availability"
+                style="background:rgba(200,151,43,.08);color:var(--jp-gold);border:1px solid rgba(200,151,43,.25);font-size:.72rem;">
+                {% if item.is_available %}<i class="bi bi-eye-slash"></i>{% else %}<i class="bi bi-eye"></i>{% endif %}
+              </button>
+            </form>
+            <a href="{% url 'item_edit' item.pk %}" class="btn btn-sm btn-outline-primary ms-1" style="font-size:.72rem;"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'item_delete' item.pk %}" style="display:inline;"
+                  onsubmit="return confirm('Delete « {{ item.name }} »?')">{% csrf_token %}
+              <button class="btn btn-sm btn-outline-danger ms-1" style="font-size:.72rem;"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3" style="font-size:.82rem;">
+            No items — <a href="{% url 'item_add' %}" class="link-gold">add one</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% empty %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-journal-x" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:.3;"></i>
+    No categories yet.
+    <a href="{% url 'category_add' %}" class="link-gold ms-1">Add the first category →</a>
+  </div>
 </div>
 {% endfor %}
 {% endblock %}

@@ -1,23 +1,30 @@
+version: "3.9"
+
 services:
+
   db:
     image: postgres:16-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB:       cafe_db
-      POSTGRES_USER:     cafe_user
-      POSTGRES_PASSWORD: cafe_secure_2024
+      POSTGRES_DB: yasumi_db
+      POSTGRES_USER: yasumi_user
+      POSTGRES_PASSWORD: Yasumi@2024!
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cafe_user -d cafe_db"]
+      test: ["CMD-SHELL", "pg_isready -U yasumi_user -d yasumi_db"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
 
   web:
-    build: .
+    build:
+      context: .
+      network: host        # use host network during build so pip can reach PyPI
     volumes:
       - .:/app
+      - media_vol:/app/media
     ports:
       - "8008:8000"
     depends_on:
@@ -25,7 +32,17 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      DB_HOST: db
+      DB_NAME: yasumi_db
+      DB_USER: yasumi_user
+      DB_PASSWORD: Yasumi@2024!
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,web"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  media_vol:

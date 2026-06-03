@@ -1,109 +1,649 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POS · Yasumi</title>
+  <title>POS · 休み Yasumi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    :root { --red:#c0392b; --dark:#111; --darker:#0a0a0a; --card:#1a1a1a; --border:#2a2a2a; --gold:#f0a500; }
-    * { box-sizing: border-box; }
-    body { background:var(--dark); color:#eee; font-family:'Segoe UI',sans-serif; overflow:hidden; margin:0; }
+    /* ── Yasumi Logo Palette: Red · Black · White ── */
+    :root {
+      --torii:     #c0392b;
+      --torii-d:   #9b2335;
+      --gold:      #ffffff;   /* white replaces gold */
+      --amber:     #e8e8e8;
+      --sumi:      #0a0a0a;
+      --dark:      #111111;
+      --darker:    #0d0d0d;
+      --card:      #1a1a1a;
+      --border:    #2a2a2a;
+      --cream:     #f0ece4;
+      --silver:    #909090;
+      --mist:      #525252;
+      --matcha:    #2a5c3e;
+      --matcha-lt: #5daa80;
+    }
 
-    /* NAV */
-    .pos-nav { height:48px; background:var(--darker); border-bottom:2px solid var(--red); display:flex; align-items:center; padding:0 16px; gap:16px; flex-shrink:0; }
-    .pos-nav .brand { color:var(--red); font-weight:900; font-size:1.1rem; letter-spacing:3px; }
-    .pos-nav .nav-links { display:flex; gap:8px; margin-left:auto; }
-    .pos-nav a { color:#aaa; text-decoration:none; font-size:.8rem; padding:4px 10px; border-radius:4px; }
-    .pos-nav a:hover { color:#fff; background:#222; }
-    .pos-nav .user-info { color:#666; font-size:.8rem; }
+    *, *::before, *::after { box-sizing: border-box; }
 
-    /* LAYOUT */
-    .pos-wrap { display:flex; height:calc(100vh - 48px); }
+    body {
+      background: var(--dark);
+      color: var(--cream);
+      font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
+      overflow: hidden;
+      margin: 0;
+      font-size: 0.88rem;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* LEFT: TABLES */
-    .pos-tables { width:190px; min-width:190px; background:var(--darker); border-right:2px solid var(--border); display:flex; flex-direction:column; }
-    .panel-header { padding:10px 12px; font-size:.75rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--red); border-bottom:1px solid var(--border); }
-    .tables-body { flex:1; overflow-y:auto; padding:8px; }
-    .table-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; }
-    .table-btn { border:2px solid transparent; border-radius:8px; padding:8px 4px; font-size:.72rem; font-weight:600; cursor:pointer; text-align:center; transition:all .15s; background:#1a1a1a; color:#aaa; border-color:#333; }
-    .table-btn.free { background:#0d2b0d; border-color:#2d7a35; color:#6fcf79; }
-    .table-btn.occupied { background:#2b0d0d; border-color:var(--red); color:#ff8080; }
-    .table-btn.selected { outline:2px solid var(--gold); outline-offset:2px; }
-    .table-btn:hover { filter:brightness(1.3); }
-    .table-btn .t-name { font-size:.85rem; font-weight:700; }
-    .table-btn .t-info { font-size:.62rem; opacity:.7; margin-top:2px; }
-    .takeaway-btn { width:100%; padding:10px; border-radius:8px; background:#1a1200; border:2px solid #8a6000; color:#f0a500; font-weight:700; font-size:.8rem; cursor:pointer; transition:all .15s; }
-    .takeaway-btn:hover, .takeaway-btn.selected { background:#2a1e00; border-color:var(--gold); outline:2px solid var(--gold); outline-offset:2px; }
+    /* ─── TOPBAR ─────────────────────────────────── */
+    .pos-nav {
+      height: 50px;
+      background: var(--sumi);
+      border-bottom: 2px solid var(--torii);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 14px;
+      flex-shrink: 0;
+    }
 
-    /* MIDDLE: MENU */
-    .pos-menu { flex:1; display:flex; flex-direction:column; background:#141414; overflow:hidden; }
-    .category-bar { display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px; background:#0f0f0f; border-bottom:1px solid var(--border); flex-shrink:0; }
-    .cat-btn { border:1px solid #333; background:#1a1a1a; border-radius:20px; padding:5px 14px; font-size:.78rem; font-weight:600; cursor:pointer; color:#aaa; transition:all .15s; }
-    .cat-btn.active, .cat-btn:hover { background:var(--red); border-color:var(--red); color:#fff; }
-    .product-grid { flex:1; overflow-y:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; align-content:start; }
-    .prod-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; cursor:pointer; transition:all .15s; }
-    .prod-card:hover { border-color:var(--red); transform:translateY(-2px); box-shadow:0 4px 16px rgba(192,57,43,0.2); }
-    .prod-card:active { transform:translateY(0); }
-    .prod-name { font-size:.78rem; font-weight:600; color:#ddd; margin-bottom:6px; line-height:1.3; }
-    .prod-price { font-size:.9rem; font-weight:700; color:var(--red); }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
 
-    /* RIGHT: CART */
-    .pos-cart { width:290px; min-width:290px; background:var(--card); display:flex; flex-direction:column; border-left:2px solid var(--border); }
-    .cart-header { padding:10px 14px; background:var(--darker); border-bottom:2px solid var(--red); flex-shrink:0; }
-    .cart-title { font-weight:700; font-size:.95rem; color:var(--gold); }
-    .cart-sub { font-size:.72rem; color:#666; margin-top:2px; }
-    .cart-items { flex:1; overflow-y:auto; padding:6px 8px; }
-    .cart-empty { text-align:center; color:#444; padding:2rem 1rem; font-size:.85rem; }
-    .cart-item { display:flex; align-items:center; gap:6px; padding:6px 4px; border-bottom:1px solid var(--border); }
-    .cart-item-name { flex:1; font-size:.78rem; color:#ccc; }
-    .cart-item-price { font-size:.78rem; color:var(--red); font-weight:600; min-width:55px; text-align:right; }
-    .qty-ctrl { display:flex; align-items:center; gap:3px; }
-    .qty-btn { width:20px; height:20px; border-radius:50%; border:1px solid #444; background:#222; color:#aaa; font-size:.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1; }
-    .qty-btn:hover { background:var(--red); border-color:var(--red); color:#fff; }
-    .qty-val { width:20px; text-align:center; font-size:.82rem; font-weight:600; color:#fff; }
-    .cart-totals { padding:8px 12px; border-top:1px solid var(--border); font-size:.82rem; flex-shrink:0; }
-    .tot-row { display:flex; justify-content:space-between; padding:2px 0; color:#888; }
-    .tot-grand { font-weight:700; font-size:1rem; color:#fff; border-top:1px solid var(--red); margin-top:6px; padding-top:6px; }
-    .discount-wrap { display:flex; gap:6px; margin:4px 0; }
-    .discount-wrap input { flex:1; background:#111; border:1px solid #333; color:#fff; border-radius:6px; padding:4px 8px; font-size:.78rem; }
-    .discount-wrap input:focus { outline:none; border-color:var(--red); }
-    .cart-actions { padding:8px 10px; border-top:1px solid var(--border); display:grid; gap:6px; flex-shrink:0; }
-    .pay-btn { border:none; border-radius:8px; padding:9px; font-weight:700; font-size:.85rem; cursor:pointer; transition:all .15s; width:100%; }
-    .pay-btn:disabled { opacity:.35; cursor:not-allowed; }
-    .btn-cash { background:#1a4a1a; border:1px solid #2d7a35; color:#6fcf79; }
-    .btn-cash:hover:not(:disabled) { background:#1e5c1e; }
-    .btn-fonepay { background:#1a1a3a; border:1px solid #3a3aaa; color:#8080ff; }
-    .btn-fonepay:hover:not(:disabled) { background:#1e1e4a; }
-    .btn-split { background:#2a1a4a; border:1px solid #6a3aaa; color:#b07fff; }
-    .btn-split:hover:not(:disabled) { background:#341d5e; }
-    .btn-credit { background:#1a2a4a; border:1px solid #2a5aaa; color:#7ab0ff; }
-    .btn-credit:hover:not(:disabled) { background:#1e3260; }
-    .btn-cancel { background:none; border:1px solid #5a1010; color:#cc4444; border-radius:8px; padding:6px; font-size:.78rem; cursor:pointer; width:100%; transition:all .15s; }
-    .btn-cancel:hover:not(:disabled) { background:#5a1010; color:#fff; }
-    .btn-cancel:disabled { opacity:.35; }
+    .nav-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--torii);
+      letter-spacing: 3px;
+    }
 
-    /* MODALS */
-    .modal-content { background:#1a1a1a; border:1px solid #333; color:#eee; }
-    .modal-header { border-bottom:1px solid #333; }
-    .modal-footer { border-top:1px solid #333; }
-    .amount-box { background:#111; border:2px solid var(--red); border-radius:8px; padding:12px; text-align:center; font-size:1.6rem; font-weight:700; color:var(--gold); margin-bottom:1rem; }
-    .change-box { background:#0d2b0d; border:1px solid #2d7a35; border-radius:8px; padding:8px; text-align:center; font-weight:700; color:#6fcf79; }
-    .form-control, .form-select { background:#111; border:1px solid #333; color:#fff; }
-    .form-control:focus, .form-select:focus { background:#1a1a1a; border-color:var(--red); color:#fff; box-shadow:none; }
-    .form-label { color:#aaa; font-size:.85rem; }
-    .scrollbar::-webkit-scrollbar { width:4px; }
-    .scrollbar::-webkit-scrollbar-track { background:transparent; }
-    .scrollbar::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+    .nav-romaji {
+      font-size: 0.72rem;
+      letter-spacing: 5px;
+      color: var(--gold);
+      text-transform: uppercase;
+      padding-top: 2px;
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+    }
+
+    .nav-user {
+      font-size: 0.78rem;
+      color: var(--silver);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-links a {
+      color: var(--silver);
+      text-decoration: none;
+      font-size: 0.78rem;
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+
+    .nav-links a:hover { background: rgba(255,255,255,0.05); color: var(--cream); }
+
+    /* ─── LAYOUT ──────────────────────────────────── */
+    .pos-wrap {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+    /* ─── LEFT: TABLES ───────────────────────────── */
+    .pos-tables {
+      width: 196px;
+      min-width: 196px;
+      background: var(--darker);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 10px 12px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--torii);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tables-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .table-btn {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      background: var(--card);
+      color: var(--silver);
+    }
+
+    .table-btn:hover { filter: brightness(1.25); }
+
+    .table-btn.free {
+      background: rgba(42,92,62,0.2);
+      border-color: rgba(93,170,128,0.4);
+      color: var(--matcha-lt);
+    }
+
+    .table-btn.occupied {
+      background: rgba(155,35,53,0.15);
+      border-color: rgba(192,57,43,0.5);
+      color: #ff8080;
+    }
+
+    .table-btn.selected {
+      outline: 2px solid var(--gold);
+      outline-offset: 1px;
+    }
+
+    .table-btn .t-name { font-size: 0.88rem; font-weight: 700; }
+    .table-btn .t-info { font-size: 0.6rem; opacity: 0.65; margin-top: 2px; }
+
+    .takeaway-btn {
+      width: 100%;
+      padding: 9px;
+      border-radius: 6px;
+      background: rgba(200,151,43,0.08);
+      border: 1px solid rgba(200,151,43,0.35);
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .takeaway-btn:hover,
+    .takeaway-btn.selected {
+      background: rgba(200,151,43,0.14);
+      border-color: var(--gold);
+      outline: 2px solid var(--gold);
+      outline-offset: 1px;
+    }
+
+    /* ─── MIDDLE: MENU ───────────────────────────── */
+    .pos-menu {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0f0f18;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .category-bar {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 5px;
+      padding: 8px 10px;
+      background: var(--darker);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
+    }
+    .category-bar::-webkit-scrollbar { height: 3px; }
+    .category-bar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .cat-btn {
+      border: 1px solid var(--border);
+      background: transparent;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--silver);
+      transition: all 0.15s;
+      font-family: 'Noto Sans JP', sans-serif;
+      letter-spacing: 0.3px;
+    }
+
+    .cat-btn.active,
+    .cat-btn:hover {
+      background: var(--torii);
+      border-color: var(--torii);
+      color: #fff;
+    }
+
+    .product-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(114px, 1fr));
+      gap: 7px;
+      align-content: start;
+    }
+
+    .prod-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.14s;
+      user-select: none;
+    }
+
+    .prod-card:hover {
+      border-color: var(--torii);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 18px rgba(192,57,43,0.18);
+    }
+
+    .prod-card:active { transform: translateY(0); box-shadow: none; }
+
+    .prod-name {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--cream);
+      margin-bottom: 7px;
+      line-height: 1.35;
+    }
+
+    .prod-price {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ─── RIGHT: CART ────────────────────────────── */
+    .pos-cart {
+      width: 294px;
+      min-width: 294px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-header {
+      padding: 11px 14px;
+      background: var(--sumi);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .cart-title {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .cart-sub {
+      font-size: 0.7rem;
+      color: var(--mist);
+      margin-top: 2px;
+    }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: var(--mist);
+      padding: 2.5rem 1rem;
+      font-size: 0.82rem;
+    }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 4px;
+      border-bottom: 1px solid rgba(37,37,56,0.7);
+    }
+
+    .cart-item-name {
+      flex: 1;
+      font-size: 0.76rem;
+      color: var(--cream);
+      line-height: 1.3;
+    }
+
+    .cart-item-price {
+      font-size: 0.76rem;
+      color: var(--gold);
+      font-weight: 600;
+      min-width: 58px;
+      text-align: right;
+    }
+
+    .qty-ctrl { display: flex; align-items: center; gap: 2px; }
+
+    .qty-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #1a1a28;
+      color: var(--silver);
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: all 0.12s;
+    }
+
+    .qty-btn:hover { background: var(--torii); border-color: var(--torii); color: #fff; }
+
+    .qty-val {
+      width: 22px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* ── Totals ── */
+    .cart-totals {
+      padding: 9px 13px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.15);
+    }
+
+    .tot-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      color: var(--silver);
+    }
+
+    .tot-row span:last-child { color: var(--cream); }
+
+    .tot-grand {
+      font-weight: 700;
+      font-size: 1.02rem;
+      color: var(--cream) !important;
+      border-top: 1px solid var(--torii);
+      margin-top: 7px;
+      padding-top: 7px;
+    }
+
+    .tot-grand span:last-child { color: var(--gold) !important; }
+
+    .discount-wrap {
+      display: flex;
+      gap: 5px;
+      margin: 5px 0;
+    }
+
+    .discount-wrap input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      color: var(--cream);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.76rem;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .discount-wrap input:focus { border-color: var(--torii); }
+
+    /* ── Cart actions ── */
+    .cart-actions {
+      padding: 8px 10px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      gap: 5px;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.1);
+    }
+
+    .pay-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 9px 6px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.14s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .pay-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-cash {
+      background: rgba(42,92,62,0.2);
+      border: 1px solid rgba(93,170,128,0.45);
+      color: var(--matcha-lt);
+    }
+    .btn-cash:hover:not(:disabled) { background: rgba(42,92,62,0.35); }
+
+    .btn-fonepay {
+      background: rgba(74,100,200,0.15);
+      border: 1px solid rgba(100,130,230,0.4);
+      color: #8ab0ff;
+    }
+    .btn-fonepay:hover:not(:disabled) { background: rgba(74,100,200,0.25); }
+
+    .btn-split {
+      background: rgba(120,60,200,0.12);
+      border: 1px solid rgba(140,80,230,0.35);
+      color: #b07fff;
+    }
+    .btn-split:hover:not(:disabled) { background: rgba(120,60,200,0.22); }
+
+    .btn-credit {
+      background: rgba(60,120,180,0.12);
+      border: 1px solid rgba(80,140,210,0.35);
+      color: #7ab0ef;
+    }
+    .btn-credit:hover:not(:disabled) { background: rgba(60,120,180,0.22); }
+
+    .btn-cancel {
+      background: none;
+      border: 1px solid rgba(192,57,43,0.3);
+      color: rgba(255,100,100,0.7);
+      border-radius: 6px;
+      padding: 6px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.14s;
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-cancel:hover:not(:disabled) {
+      background: rgba(192,57,43,0.12);
+      color: #ff8080;
+      border-color: rgba(192,57,43,0.5);
+    }
+
+    .btn-cancel:disabled { opacity: 0.25; }
+
+    /* ─── MODALS ─────────────────────────────────── */
+    .modal-content {
+      background: #181826;
+      border: 1px solid var(--border);
+      color: var(--cream);
+      border-radius: 6px;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+    }
+
+    .modal-title { font-size: 0.9rem; font-weight: 600; }
+
+    .modal-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+
+    .amount-box {
+      background: rgba(0,0,0,0.3);
+      border: 2px solid var(--torii);
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 18px;
+      letter-spacing: 1px;
+    }
+
+    .change-box {
+      border-radius: 5px;
+      padding: 9px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .change-ok {
+      background: rgba(42,92,62,0.2);
+      border: 1px solid rgba(93,170,128,0.45);
+      color: var(--matcha-lt);
+    }
+
+    .change-short {
+      background: rgba(192,57,43,0.12);
+      border: 1px solid rgba(192,57,43,0.4);
+      color: #ff8080;
+    }
+
+    .form-control, .form-select {
+      background: #0e0e1c;
+      border: 1px solid var(--border);
+      color: var(--cream);
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .form-control:focus, .form-select:focus {
+      background: #131322;
+      border-color: var(--torii);
+      color: var(--cream);
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
+    }
+    .form-control::placeholder { color: var(--mist); }
+    .form-label { color: var(--silver); font-size: 0.8rem; }
+
+    .btn-close { filter: invert(0.7) sepia(0.2); }
+
+    .btn-sm { font-size: 0.8rem; padding: 6px 14px; }
+
+    .btn-confirm {
+      background: var(--torii);
+      border: none;
+      color: #fff;
+      border-radius: 4px;
+      padding: 7px 20px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: background 0.14s;
+    }
+
+    .btn-confirm:hover { background: var(--torii-d); }
+
+    .qr-placeholder {
+      text-align: center;
+      padding: 18px;
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      color: var(--mist);
+    }
+
+    .qr-placeholder i { font-size: 2.8rem; display: block; margin-bottom: 8px; opacity: 0.5; }
+
+    /* ─── SCROLLBAR ───────────────────────────────── */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a3a58; }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- ── TOPBAR ── -->
 <nav class="pos-nav">
-  <span class="brand">休み YASUMI</span>
-  <span class="user-info"><i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.username }}</span>
+  <div class="nav-brand">
+    <span class="nav-kanji">休み</span>
+    <span class="nav-romaji">Yasumi</span>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-user">
+    <i class="bi bi-person-circle"></i>
+    {{ user.get_full_name|default:user.username }}
+  </div>
   <div class="nav-links">
     {% if user.is_staff %}
     <a href="/dashboard/"><i class="bi bi-speedometer2"></i> Dashboard</a>
@@ -114,12 +654,14 @@
 
 <div class="pos-wrap">
 
-  <!-- LEFT: TABLES -->
+  <!-- ── LEFT: TABLES ── -->
   <div class="pos-tables">
-    <div class="panel-header"><i class="bi bi-grid-3x3-gap"></i> Tables</div>
-    <div class="tables-body scrollbar">
+    <div class="panel-header">
+      <i class="bi bi-grid-3x3-gap"></i> Tables
+    </div>
+    <div class="tables-body">
       <div class="table-grid" id="tableGrid">
-        <div class="text-muted" style="font-size:.7rem;padding:4px;">Loading...</div>
+        <div style="color:var(--mist);font-size:.7rem;padding:6px;grid-column:1/-1;">Loading…</div>
       </div>
       <button class="takeaway-btn" id="takeawayBtn" onclick="selectTakeaway()">
         <i class="bi bi-bag"></i> Takeaway
@@ -127,87 +669,116 @@
     </div>
   </div>
 
-  <!-- MIDDLE: MENU -->
+  <!-- ── MIDDLE: MENU ── -->
   <div class="pos-menu">
     <div class="category-bar" id="categoryBar">
       <button class="cat-btn active" onclick="loadProducts(this, '')" data-cat="">All</button>
     </div>
-    <div class="product-grid scrollbar" id="productGrid">
-      <div style="color:#444;font-size:.85rem;padding:20px;grid-column:1/-1;">Select a table or takeaway to start.</div>
+    <div class="product-grid" id="productGrid">
+      <div style="color:var(--mist);font-size:.85rem;padding:24px;grid-column:1/-1;text-align:center;">
+        <i class="bi bi-shop-window" style="display:block;font-size:2rem;margin-bottom:8px;opacity:.3;"></i>
+        Select a table or Takeaway to begin.
+      </div>
     </div>
   </div>
 
-  <!-- RIGHT: CART -->
+  <!-- ── RIGHT: CART ── -->
   <div class="pos-cart">
     <div class="cart-header">
-      <div class="cart-title" id="cartTitle">No table selected</div>
+      <div class="cart-title">
+        <i class="bi bi-bag-check"></i>
+        <span id="cartTitle">No table selected</span>
+      </div>
       <div class="cart-sub" id="cartSub">Select a table or takeaway</div>
     </div>
-    <div class="cart-items scrollbar" id="cartItems">
-      <div class="cart-empty"><i class="bi bi-cart3" style="font-size:2rem;display:block;margin-bottom:8px;color:#333;"></i>Cart is empty</div>
+
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty">
+        <i class="bi bi-cart3" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.25;"></i>
+        Cart is empty
+      </div>
     </div>
+
     <div class="cart-totals">
       <div class="tot-row"><span>Subtotal</span><span id="tSubtotal">Rs. 0.00</span></div>
-      <div class="tot-row"><span>Tax (13%)</span><span id="tTax">Rs. 0.00</span></div>
       <div class="discount-wrap">
         <input type="number" id="discountInput" placeholder="Discount (Rs.)" min="0" oninput="applyDiscount()">
       </div>
       <div class="tot-row tot-grand"><span>TOTAL</span><span id="tTotal">Rs. 0.00</span></div>
     </div>
+
     <div class="cart-actions">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        <button class="pay-btn btn-cash"    id="btnCash"    onclick="openPay('CASH')"    disabled><i class="bi bi-cash-coin"></i> Cash</button>
-        <button class="pay-btn btn-fonepay" id="btnFonepay" onclick="openPay('FONEPAY')" disabled><i class="bi bi-qr-code"></i> FonePay</button>
-        <button class="pay-btn btn-split"   id="btnSplit"   onclick="openSplit()"        disabled><i class="bi bi-arrows-split"></i> Split</button>
-        <button class="pay-btn btn-credit"  id="btnCredit"  onclick="openPay('CREDIT')"  disabled><i class="bi bi-person-lines-fill"></i> Credit</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+        <button class="pay-btn btn-cash"    id="btnCash"    onclick="openPay('CASH')"    disabled>
+          <i class="bi bi-cash-coin"></i> Cash
+        </button>
+        <button class="pay-btn btn-fonepay" id="btnFonepay" onclick="openPay('FONEPAY')" disabled>
+          <i class="bi bi-qr-code"></i> FonePay
+        </button>
+        <button class="pay-btn btn-split"   id="btnSplit"   onclick="openSplit()"        disabled>
+          <i class="bi bi-arrows-split"></i> Split
+        </button>
+        <button class="pay-btn btn-credit"  id="btnCredit"  onclick="openPay('CREDIT')"  disabled>
+          <i class="bi bi-person-lines-fill"></i> Credit
+        </button>
       </div>
-      <button class="btn-cancel" id="btnCancel" onclick="cancelOrder()" disabled><i class="bi bi-x-circle"></i> Cancel Order</button>
+      <button class="btn-cancel" id="btnCancel" onclick="cancelOrder()" disabled>
+        <i class="bi bi-x-circle"></i> Cancel Order
+      </button>
     </div>
   </div>
-</div>
 
-<!-- PAY MODAL -->
+</div><!-- /.pos-wrap -->
+
+<!-- ── PAYMENT MODAL ── -->
 <div class="modal fade" id="payModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:360px">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:360px;">
     <div class="modal-content">
       <div class="modal-header">
         <h6 class="modal-title" id="payModalTitle">Payment</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="amount-box" id="payAmount">Rs. 0.00</div>
+
+        <!-- Cash fields -->
         <div id="cashFields">
           <label class="form-label">Amount Tendered</label>
           <input type="number" id="cashTendered" class="form-control mb-2" placeholder="Rs. 0" oninput="calcChange()">
-          <div class="change-box d-none" id="changeBox">Change: Rs. 0.00</div>
+          <div id="changeBox" class="change-box d-none"></div>
         </div>
-        <div id="qrFields" style="display:none">
-          <div style="text-align:center;padding:16px;border:2px dashed #333;border-radius:8px;color:#666;">
-            <i class="bi bi-qr-code" style="font-size:3rem;display:block;margin-bottom:8px;"></i>
-            <div id="qrLabel" style="font-weight:700;"></div>
-            <div style="font-size:.75rem;margin-top:4px;">Ask customer to scan and pay</div>
+
+        <!-- QR fields (FonePay) -->
+        <div id="qrFields" style="display:none;">
+          <div class="qr-placeholder">
+            <i class="bi bi-qr-code"></i>
+            <div id="qrLabel" style="font-weight:700;font-size:.9rem;"></div>
+            <div style="font-size:.73rem;margin-top:4px;">Ask customer to scan and pay</div>
           </div>
           <div class="mt-3">
-            <label class="form-label">Transaction Ref <span class="text-muted">(optional)</span></label>
+            <label class="form-label">Transaction Ref <span style="color:var(--mist);">(optional)</span></label>
             <input type="text" id="txnRef" class="form-control" placeholder="Txn reference">
           </div>
         </div>
-        <div id="creditFields" style="display:none">
-          <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+
+        <!-- Credit fields -->
+        <div id="creditFields" style="display:none;">
+          <label class="form-label">Customer Name <span style="color:var(--torii);">*</span></label>
           <input type="text" id="creditName" class="form-control mb-2" placeholder="Enter customer name">
-          <label class="form-label">Phone <span class="text-muted">(optional)</span></label>
+          <label class="form-label">Phone <span style="color:var(--mist);">(optional)</span></label>
           <input type="text" id="creditPhone" class="form-control mb-2" placeholder="98XXXXXXXX">
           <label class="form-label">Notes</label>
           <input type="text" id="creditNotes" class="form-control" placeholder="Any notes">
         </div>
+
         <div class="mt-3">
-          <label class="form-label">Discount (Rs.) <span class="text-muted">(optional)</span></label>
+          <label class="form-label">Discount (Rs.) <span style="color:var(--mist);">(optional)</span></label>
           <input type="number" id="modalDiscount" class="form-control" placeholder="0" min="0">
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-sm fw-bold px-4" id="confirmPayBtn" style="background:var(--red);color:#fff;" onclick="confirmPayment()">
+        <button class="btn-confirm" id="confirmPayBtn" onclick="confirmPayment()">
           <i class="bi bi-check-lg"></i> Confirm
         </button>
       </div>
@@ -215,14 +786,13 @@
   </div>
 </div>
 
-
-<!-- SPLIT MODAL -->
+<!-- ── SPLIT MODAL ── -->
 <div class="modal fade" id="splitModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:360px">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:360px;">
     <div class="modal-content">
       <div class="modal-header">
         <h6 class="modal-title"><i class="bi bi-arrows-split"></i> Split Payment</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="amount-box" id="splitTotal">Rs. 0.00</div>
@@ -239,20 +809,20 @@
           <label class="form-label"><i class="bi bi-person-lines-fill"></i> Credit</label>
           <input type="number" id="splitCredit" class="form-control" placeholder="0" min="0" oninput="calcSplitRemainder()">
         </div>
-        <div id="splitCreditDetails" style="display:none" class="mt-2 p-2" style="background:#111;border-radius:8px;">
-          <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+        <div id="splitCreditDetails" style="display:none;" class="mb-2 p-2 rounded" style="background:rgba(0,0,0,.2);">
+          <label class="form-label">Customer Name <span style="color:var(--torii);">*</span></label>
           <input type="text" id="splitCreditName" class="form-control mb-2" placeholder="Customer name">
           <label class="form-label">Phone</label>
           <input type="text" id="splitCreditPhone" class="form-control" placeholder="98XXXXXXXX">
         </div>
-        <div class="mt-3 p-2" style="background:#111;border-radius:8px;display:flex;justify-content:space-between;">
-          <span style="color:#888;">Remaining</span>
-          <span id="splitRemaining" style="color:#f0a500;font-weight:700;">Rs. 0.00</span>
+        <div class="mt-2 px-2 py-2 rounded" style="background:rgba(0,0,0,.2);display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:var(--silver);font-size:.82rem;">Remaining</span>
+          <span id="splitRemaining" style="color:var(--gold);font-weight:700;">Rs. 0.00</span>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-sm fw-bold px-4" style="background:#6c3483;color:#fff;" onclick="confirmSplit()">
+        <button class="btn-confirm" onclick="confirmSplit()" style="background:#6a38b0;">
           <i class="bi bi-check-lg"></i> Confirm Split
         </button>
       </div>
@@ -260,18 +830,20 @@
   </div>
 </div>
 
-<!-- RECEIPT MODAL -->
+<!-- ── RECEIPT MODAL ── -->
 <div class="modal fade" id="receiptModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:360px">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:360px;">
     <div class="modal-content">
       <div class="modal-header">
         <h6 class="modal-title"><i class="bi bi-receipt"></i> Receipt</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="receiptBody" style="font-family:monospace;font-size:.82rem;"></div>
+      <div class="modal-body" id="receiptBody" style="font-family:monospace;font-size:.8rem;"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-        <button class="btn btn-sm" style="background:var(--red);color:#fff;" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+        <button class="btn-confirm" onclick="window.print()">
+          <i class="bi bi-printer"></i> Print
+        </button>
       </div>
     </div>
   </div>

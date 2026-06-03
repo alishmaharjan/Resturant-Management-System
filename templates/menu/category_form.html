@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Category · Yasumi{% endblock %}
+{% block nav_menu %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-folder-plus text-torii" style="margin-right:8px;"></i>{{ action }} Category</h1>
+  <a href="{% url 'menu_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+    <i class="bi bi-arrow-left"></i> Back to Menu
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-folder2 text-gold" style="margin-right:6px;"></i>Category Details</div>
+      <div class="card-body">
+        {% if error %}
+          <div class="alert alert-danger py-2" style="font-size:.85rem;">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-4">
+            <label class="form-label">Category Name <span style="color:var(--jp-torii);">*</span></label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ obj.name|default:'' }}"
+                   placeholder="e.g. Sushi, Ramen, Drinks…" required autofocus>
+          </div>
+          {% if obj %}
+          <div class="mb-4">
+            <div class="form-check" style="padding-left:0;">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" name="is_active" id="is_active"
+                       {% if obj.is_active %}checked{% endif %}
+                       style="width:16px;height:16px;accent-color:var(--jp-torii);">
+                <span style="color:var(--jp-cream);font-size:.88rem;">Active (visible in POS)</span>
+              </label>
+            </div>
+          </div>
+          {% endif %}
+          <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn btn-yasumi">
+              <i class="bi bi-check-lg"></i> {{ action }} Category
+            </button>
+            <a href="{% url 'menu_list' %}" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

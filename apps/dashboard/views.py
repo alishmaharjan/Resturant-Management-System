@@ -65,10 +65,9 @@ def api_auth(f):
 
 def recompute_totals(order):
     subtotal = sum(i.line_total for i in order.items.all())
-    tax = subtotal * (Decimal('13') / 100)
-    order.subtotal = subtotal
-    order.tax_amount = tax
-    order.grand_total = subtotal + tax - order.discount_amount
+    order.subtotal    = subtotal
+    order.tax_amount  = Decimal('0')
+    order.grand_total = subtotal - order.discount_amount
     order.save(update_fields=['subtotal', 'tax_amount', 'grand_total'])
 
 
@@ -100,7 +99,32 @@ def dashboard_view(request):
         return redirect('login')
     if not request.user.is_staff:
         return redirect('pos')
-    return render(request, 'dashboard/index.html', {'user': request.user})
+
+    today = timezone.now().date()
+    tz = timezone.get_current_timezone()
+    start = timezone.datetime.combine(today, timezone.datetime.min.time()).replace(tzinfo=tz)
+    end   = timezone.datetime.combine(today, timezone.datetime.max.time()).replace(tzinfo=tz)
+
+    active_statuses = ['OPEN', 'CONFIRMED', 'PREPARING', 'SERVED']
+    total_tables  = Table.objects.filter(is_active=True).count()
+    occupied      = (Order.objects.filter(status__in=active_statuses, table_no__isnull=False)
+                     .exclude(table_no='').values('table_no').distinct().count())
+    active_orders = Order.objects.filter(status__in=active_statuses).count()
+
+    paid_today    = Order.objects.filter(status='PAID', created_at__gte=start, created_at__lte=end)
+    revenue_agg   = paid_today.aggregate(total=Sum('grand_total'))
+    today_revenue = revenue_agg['total'] or 0
+
+    recent_orders = Order.objects.order_by('-created_at').select_related()[:20]
+
+    return render(request, 'dashboard/index.html', {
+        'user':           request.user,
+        'total_tables':   total_tables,
+        'occupied_tables': occupied,
+        'active_orders':  active_orders,
+        'today_revenue':  f'{today_revenue:,.2f}',
+        'recent_orders':  recent_orders,
+    })
 
 
 # ── API: Tables ───────────────────────────────────────────────────────────────

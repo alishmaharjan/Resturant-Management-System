@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Table · Yasumi{% endblock %}
+{% block nav_tables %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-plus-square text-torii" style="margin-right:8px;"></i>{{ action }} Table</h1>
+  <a href="{% url 'table_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+    <i class="bi bi-arrow-left"></i> Back to Tables
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-grid-3x3-gap text-gold" style="margin-right:6px;"></i>Table Details</div>
+      <div class="card-body">
+        {% if error %}
+          <div class="alert alert-danger py-2" style="font-size:.85rem;">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Table Name / Number <span style="color:var(--jp-torii);">*</span></label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ obj.name|default:'' }}"
+                   placeholder="e.g. T1, BAR-1, GARDEN-2…" required autofocus>
+            <div style="font-size:.72rem;color:var(--jp-mist);margin-top:4px;">Will be uppercased automatically.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Seating Capacity <span style="color:var(--jp-torii);">*</span></label>
+            <input type="number" name="capacity" class="form-control"
+                   value="{{ obj.capacity|default:'4' }}"
+                   min="1" max="50" required>
+          </div>
+          {% if obj %}
+          <div class="mb-4">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" name="is_active" {% if obj.is_active %}checked{% endif %}
+                     style="width:16px;height:16px;accent-color:var(--jp-torii);">
+              <span style="color:var(--jp-cream);font-size:.88rem;">Active (visible in POS)</span>
+            </label>
+          </div>
+          {% endif %}
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="submit" class="btn btn-yasumi"><i class="bi bi-check-lg"></i> {{ action }} Table</button>
+            <a href="{% url 'table_list' %}" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

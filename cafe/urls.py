@@ -9,5 +9,6 @@ urlpatterns = [
     path('tables/', include('apps.tables.urls')),
     path('menu/',   include('apps.menu.urls')),
     path('orders/', include('apps.orders.urls')),
-    path('billing/', include('apps.billing.urls')),
+    path('billing/',  include('apps.billing.urls')),
+    path('reports/',  include('apps.reports.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

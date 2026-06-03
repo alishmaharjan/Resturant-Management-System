@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}{{ account.name }} · Credit · Yasumi{% endblock %}
+{% block nav_billing %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{% url 'credit_list' %}" style="color:var(--jp-silver);text-decoration:none;font-size:.85rem;">
+      <i class="bi bi-arrow-left"></i> Credit Accounts
+    </a>
+    <span style="color:var(--jp-border);">/</span>
+    <h1 class="page-title" style="margin:0;">{{ account.name }}</h1>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-torii);">
+      <div class="stat-label"><i class="bi bi-arrow-down-circle"></i> Total Credit</div>
+      <div class="stat-value" style="color:var(--jp-torii);">Rs. {{ total_credit }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid #5daa80;">
+      <div class="stat-label"><i class="bi bi-arrow-up-circle"></i> Total Repaid</div>
+      <div class="stat-value" style="color:#5daa80;">Rs. {{ total_repaid }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-gold);">
+      <div class="stat-label"><i class="bi bi-exclamation-circle"></i> Balance Due</div>
+      <div class="stat-value" style="color:{% if balance > 0 %}var(--jp-gold){% else %}#5daa80{% endif %};">
+        Rs. {{ balance }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Record Repayment -->
+{% if balance > 0 %}
+<div class="card mb-3">
+  <div class="card-header"><i class="bi bi-plus-circle text-gold" style="margin-right:6px;"></i>Record Repayment</div>
+  <div class="card-body">
+    <form method="post" action="{% url 'credit_repay' account.pk %}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      {% csrf_token %}
+      <div>
+        <label class="form-label" style="font-size:.75rem;">Amount (Rs.)</label>
+        <input type="number" name="amount" class="form-control form-control-sm" placeholder="0.00" step="0.01" min="0.01" max="{{ balance }}" required style="width:150px;">
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label" style="font-size:.75rem;">Notes (optional)</label>
+        <input type="text" name="notes" class="form-control form-control-sm" placeholder="Cash repayment, etc.">
+      </div>
+      <button type="submit" class="btn btn-yasumi btn-sm"><i class="bi bi-check-lg"></i> Record</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Account info + transaction history -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span><i class="bi bi-clock-history text-gold" style="margin-right:6px;"></i>Transaction History</span>
+    {% if account.phone %}
+    <span class="text-muted" style="font-size:.8rem;"><i class="bi bi-telephone"></i> {{ account.phone }}</span>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.85rem;">
+      <thead>
+        <tr><th>Type</th><th>Amount</th><th>Order</th><th>Notes</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>
+            {% if r.record_type == 'CREDIT' %}
+              <span style="color:var(--jp-torii);">↓ Credit</span>
+            {% else %}
+              <span style="color:#5daa80;">↑ Repayment</span>
+            {% endif %}
+          </td>
+          <td style="font-weight:600;">Rs. {{ r.amount }}</td>
+          <td>
+            {% if r.order %}
+              <a href="{% url 'order_detail' r.order.pk %}" class="link-gold">{{ r.order.order_no }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-muted">{{ r.notes|default:"—" }}</td>
+          <td class="text-muted" style="font-size:.78rem;">{{ r.created_at|date:"d M Y, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3">No records yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

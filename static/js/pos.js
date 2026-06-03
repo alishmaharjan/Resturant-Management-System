@@ -201,7 +201,6 @@ function renderCart() {
   if (!order || !order.items || !order.items.length) {
     container.innerHTML = '<div class="cart-empty"><i class="bi bi-cart3" style="font-size:2rem;display:block;margin-bottom:8px;color:#333;"></i>Cart is empty</div>';
     document.getElementById('tSubtotal').textContent = 'Rs. 0.00';
-    document.getElementById('tTax').textContent      = 'Rs. 0.00';
     document.getElementById('tTotal').textContent    = 'Rs. 0.00';
     return;
   }
@@ -219,7 +218,6 @@ function renderCart() {
   `).join('');
 
   document.getElementById('tSubtotal').textContent = fmt(order.subtotal);
-  document.getElementById('tTax').textContent      = fmt(order.tax_amount);
   document.getElementById('tTotal').textContent    = fmt(order.grand_total);
 
   if (hasPaid) document.getElementById('cartSub').textContent = '✅ PAID — Select new table';
@@ -363,31 +361,43 @@ async function confirmSplit() {
 
 // ── Receipt ────────────────────────────────────────────────────────────────
 function showReceipt(order) {
-  const lines = order.items.map(i =>
-    `${i.product_name.substring(0,16).padEnd(16)} x${i.qty}  ${fmt(i.line_total)}`
+  const now  = new Date();
+  const ts   = now.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})
+               + '  ' + now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+  const W    = 32;
+  const sep  = '─'.repeat(W);
+  const lines = order.items.map(i => {
+    const name  = i.product_name.substring(0, 18);
+    const right = `x${i.qty}  ${fmt(i.line_total)}`;
+    return name.padEnd(W - right.length) + right;
+  }).join('\n');
+  const payments = order.payments.map(p =>
+    p.method.padEnd(10) + fmt(p.amount).padStart(W - 10)
   ).join('\n');
-  const payments = order.payments.map(p => `${p.method.padEnd(8)}: ${fmt(p.amount)}`).join('\n');
+
   document.getElementById('receiptBody').innerHTML = `
-<pre style="color:#eee;margin:0;font-size:.78rem;">
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-      休み  YASUMI
-   Japanese Restaurant
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+<pre style="color:#e8e0d0;margin:0;font-size:.78rem;line-height:1.55;">
+${sep}
+${'休  み  YASUMI'.padStart(Math.floor((W + 14) / 2)).padEnd(W)}
+${'Japanese Restaurant'.padStart(Math.floor((W + 19) / 2)).padEnd(W)}
+${sep}
+${ts}
 Order : ${order.order_no}
-Type  : ${order.order_type}
+Type  : ${order.order_type === 'DINE_IN' ? 'Dine In' : 'Takeaway'}
 Table : ${order.table_no || '—'}
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+${sep}
 ${lines}
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-Subtotal  : ${fmt(order.subtotal)}
-Tax (13%) : ${fmt(order.tax_amount)}
-Discount  : ${fmt(order.discount_amount)}
-TOTAL     : ${fmt(order.grand_total)}
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+${sep}
+${'Subtotal'.padEnd(14)}${fmt(order.subtotal).padStart(W - 14)}
+${'Discount'.padEnd(14)}${fmt(order.discount_amount).padStart(W - 14)}
+${sep}
+${'TOTAL'.padEnd(14)}${fmt(order.grand_total).padStart(W - 14)}
+${sep}
 ${payments}
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Thank you! またね!
-━━━━━━━━━━━━━━━━━━━━━━━━━━
+${sep}
+${'ありがとうございます！'.padStart(Math.floor((W + 9) / 2)).padEnd(W)}
+${'Thank you!  またね！'.padStart(Math.floor((W + 10) / 2)).padEnd(W)}
+${sep}
 </pre>`;
   new bootstrap.Modal(document.getElementById('receiptModal')).show();
 }

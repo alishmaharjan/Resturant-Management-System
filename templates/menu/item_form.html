@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Item · Yasumi{% endblock %}
+{% block nav_menu %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-plus-square text-torii" style="margin-right:8px;"></i>{{ action }} Menu Item</h1>
+  <a href="{% url 'menu_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+    <i class="bi bi-arrow-left"></i> Back to Menu
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-egg-fried text-gold" style="margin-right:6px;"></i>Item Details</div>
+      <div class="card-body">
+        {% if error %}
+          <div class="alert alert-danger py-2" style="font-size:.85rem;">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Item Name <span style="color:var(--jp-torii);">*</span></label>
+              <input type="text" name="name" class="form-control"
+                     value="{{ obj.name|default:'' }}"
+                     placeholder="e.g. Salmon Nigiri, Tonkotsu Ramen…" required autofocus>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select">
+                <option value="">— No category —</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.pk }}"
+                    {% if obj and obj.category_id == cat.pk %}selected{% endif %}>
+                    {{ cat.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Price (Rs.) <span style="color:var(--jp-torii);">*</span></label>
+              <input type="number" name="price" class="form-control"
+                     value="{{ obj.price|default:'' }}"
+                     placeholder="0.00" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tax %</label>
+              <input type="number" name="tax_percent" class="form-control"
+                     value="{{ obj.tax_percent|default:'13' }}"
+                     placeholder="13" step="0.01" min="0" max="100">
+            </div>
+            <div class="col-12">
+              <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" name="is_available" id="is_available"
+                       {% if obj == None or obj.is_available %}checked{% endif %}
+                       style="width:16px;height:16px;accent-color:var(--jp-torii);">
+                <span style="color:var(--jp-cream);font-size:.88rem;">Available (visible in POS)</span>
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:24px;">
+            <button type="submit" class="btn btn-yasumi">
+              <i class="bi bi-check-lg"></i> {{ action }} Item
+            </button>
+            <a href="{% url 'menu_list' %}" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

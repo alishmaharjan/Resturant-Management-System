@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Reports · 休み Yasumi{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .range-btn { padding:5px 14px;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--jp-border);background:transparent;color:var(--jp-silver);transition:all .14s; }
+  .range-btn.active, .range-btn:hover { background:var(--jp-torii);border-color:var(--jp-torii);color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-graph-up-arrow text-torii" style="margin-right:8px;"></i>Reports</h1>
+  <!-- Range selector -->
+  <div style="display:flex;gap:6px;">
+    <a href="?range=today" class="range-btn {% if range_opt == 'today' %}active{% endif %}">Today</a>
+    <a href="?range=week"  class="range-btn {% if range_opt == 'week'  %}active{% endif %}">Last 7 Days</a>
+    <a href="?range=month" class="range-btn {% if range_opt == 'month' %}active{% endif %}">This Month</a>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-matcha-lt);">
+      <div class="stat-label"><i class="bi bi-cash-coin"></i> Revenue</div>
+      <div class="stat-value" style="color:var(--jp-matcha-lt);font-size:1.6rem;">Rs. {{ revenue|floatformat:2 }}</div>
+      <div class="stat-sub">{{ date_from }} → {{ today }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-gold);">
+      <div class="stat-label"><i class="bi bi-receipt"></i> Orders</div>
+      <div class="stat-value" style="color:var(--jp-gold);">{{ order_count }}</div>
+      <div class="stat-sub">Paid orders</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-silver);">
+      <div class="stat-label"><i class="bi bi-calculator"></i> Avg Order</div>
+      <div class="stat-value">Rs. {{ avg_order|floatformat:0 }}</div>
+      <div class="stat-sub">Per order average</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+
+  <!-- Revenue Chart -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart-line text-gold" style="margin-right:6px;"></i>Revenue – Last 7 Days</div>
+      <div class="card-body" style="padding:16px;">
+        <canvas id="revenueChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Breakdown -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart text-gold" style="margin-right:6px;"></i>Payment Methods</div>
+      <div class="card-body">
+        {% if pay_breakdown %}
+          {% for p in pay_breakdown %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--jp-border);">
+            <div>
+              {% if p.method == 'CASH' %}<span style="color:#5daa80;"><i class="bi bi-cash-coin"></i> Cash</span>
+              {% elif p.method == 'FONEPAY' %}<span style="color:#8ab0ff;"><i class="bi bi-qr-code"></i> FonePay</span>
+              {% elif p.method == 'ESEWA' %}<span style="color:#6fcf79;"><i class="bi bi-phone"></i> eSewa</span>
+              {% elif p.method == 'KHALTI' %}<span style="color:#b07fff;"><i class="bi bi-phone"></i> Khalti</span>
+              {% else %}<span class="text-silver">{{ p.method }}</span>{% endif %}
+              <span class="text-muted" style="font-size:.75rem;margin-left:6px;">× {{ p.count }}</span>
+            </div>
+            <div style="font-weight:700;color:var(--jp-cream);">Rs. {{ p.total|floatformat:0 }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted py-4" style="font-size:.85rem;">No payments in this period</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Top Items -->
+<div class="card mb-3">
+  <div class="card-header"><i class="bi bi-trophy text-gold" style="margin-right:6px;"></i>Top Selling Items</div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.85rem;">
+      <thead>
+        <tr><th>#</th><th>Item</th><th>Category</th><th style="text-align:center;">Qty Sold</th><th style="text-align:right;">Revenue</th></tr>
+      </thead>
+      <tbody>
+        {% for item in top_items %}
+        <tr>
+          <td style="color:{% if forloop.counter == 1 %}#d4af37{% elif forloop.counter == 2 %}#c0c0c0{% elif forloop.counter == 3 %}#cd7f32{% else %}var(--jp-mist){% endif %};font-weight:700;">
+            {{ forloop.counter }}
+          </td>
+          <td style="font-weight:500;">{{ item.product__name }}</td>
+          <td class="text-muted" style="font-size:.78rem;">{{ item.product__category__name|default:"—" }}</td>
+          <td style="text-align:center;font-weight:600;">{{ item.qty }}</td>
+          <td style="text-align:right;font-weight:600;" class="text-gold">Rs. {{ item.revenue|floatformat:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3">No sales data for this period</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Audit Log -->
+<div class="card">
+  <div class="card-header"><i class="bi bi-journal-check text-gold" style="margin-right:6px;"></i>Recent Activity Log</div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.82rem;">
+      <thead>
+        <tr><th>Type</th><th>Action</th><th>Message</th><th>Ref</th><th>Time</th></tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td>
+            <span class="badge" style="
+              {% if log.event_type == 'ORDER' %}background:rgba(200,151,43,.15);color:#c8972b;
+              {% elif log.event_type == 'PAYMENT' %}background:rgba(42,92,62,.15);color:#5daa80;
+              {% else %}background:rgba(80,80,100,.2);color:#888;{% endif %}
+              padding:3px 8px;border-radius:3px;font-size:.68rem;">
+              {{ log.event_type }}
+            </span>
+          </td>
+          <td style="font-weight:500;">{{ log.action }}</td>
+          <td class="text-muted">{{ log.message }}</td>
+          <td class="text-muted" style="font-size:.75rem;">{{ log.reference_id|default:"—" }}</td>
+          <td class="text-muted" style="font-size:.75rem;white-space:nowrap;">{{ log.created_at|date:"d M, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3">No activity yet</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels = {{ chart_labels|safe }};
+const data   = {{ chart_data|safe }};
+const ctx    = document.getElementById('revenueChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Revenue (Rs.)',
+      data:  data,
+      backgroundColor: 'rgba(192,57,43,0.25)',
+      borderColor:     'rgba(192,57,43,0.9)',
+      borderWidth: 2,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => 'Rs. ' + ctx.parsed.y.toLocaleString()
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8888aa' } },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: '#8888aa', callback: v => 'Rs. ' + v.toLocaleString() }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

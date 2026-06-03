@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Credit Accounts · 休み Yasumi{% endblock %}
+{% block nav_billing %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-person-lines-fill text-torii" style="margin-right:8px;"></i>Credit Accounts</h1>
+  <a href="{% url 'billing_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+    <i class="bi bi-arrow-left"></i> Payments
+  </a>
+</div>
+
+{% if data %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.86rem;">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th style="text-align:right;">Total Credit</th>
+          <th style="text-align:right;">Total Repaid</th>
+          <th style="text-align:right;">Balance Due</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data %}
+        <tr>
+          <td style="font-weight:600;">{{ row.account.name }}</td>
+          <td class="text-muted">{{ row.account.phone|default:"—" }}</td>
+          <td style="text-align:right;color:var(--jp-torii);">Rs. {{ row.credit }}</td>
+          <td style="text-align:right;color:#5daa80;">Rs. {{ row.repaid }}</td>
+          <td style="text-align:right;font-weight:700;{% if row.balance > 0 %}color:var(--jp-gold);{% else %}color:#5daa80;{% endif %}">
+            Rs. {{ row.balance }}
+          </td>
+          <td style="text-align:right;">
+            <a href="{% url 'credit_detail' row.account.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;">Detail</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-person-x" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:.3;"></i>
+    No credit accounts yet. They are created automatically when a Credit payment is processed in the POS.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

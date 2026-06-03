@@ -1,45 +1,73 @@
 {% extends 'base.html' %}
-{% block title %}Tables · Yasumi{% endblock %}
+{% block title %}Tables · 休み Yasumi{% endblock %}
 {% block nav_tables %}active{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4 class="fw-bold mb-0">Tables</h4>
-  <div class="d-flex gap-2">
-    <span class="badge bg-success px-3 py-2">Available</span>
-    <span class="badge bg-danger px-3 py-2">Occupied</span>
-    <span class="badge bg-warning text-dark px-3 py-2">Reserved</span>
-  </div>
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-grid-3x3-gap text-torii" style="margin-right:8px;"></i>Table Management</h1>
+  <a href="{% url 'table_add' %}" class="btn btn-yasumi btn-sm"><i class="bi bi-plus-lg"></i> Add Table</a>
 </div>
+
+<!-- Legend -->
+<div style="display:flex;gap:16px;margin-bottom:20px;font-size:.78rem;color:var(--jp-silver);">
+  <span><span style="display:inline-block;width:10px;height:10px;background:#5daa80;border-radius:2px;margin-right:4px;"></span>Free</span>
+  <span><span style="display:inline-block;width:10px;height:10px;background:var(--jp-torii);border-radius:2px;margin-right:4px;"></span>Occupied</span>
+  <span><span style="display:inline-block;width:10px;height:10px;background:rgba(80,80,90,.5);border-radius:2px;margin-right:4px;"></span>Inactive</span>
+</div>
+
 <div class="row g-3">
-{% for table in tables %}
-  <div class="col-6 col-md-3 col-lg-2">
-    <div class="card text-center p-3 h-100"
-      style="border-top: 4px solid
-        {% if table.status == 'available' %}#27ae60
-        {% elif table.status == 'occupied' %}#c0392b
-        {% else %}#f39c12{% endif %}">
-      <div style="font-size:2rem">🍱</div>
-      <div class="fw-bold fs-5">Table {{ table.number }}</div>
-      <div class="text-muted small mb-2">{{ table.capacity }} seats</div>
-      <span class="badge mb-2
-        {% if table.status == 'available' %}bg-success
-        {% elif table.status == 'occupied' %}bg-danger
-        {% else %}bg-warning text-dark{% endif %}">
-        {{ table.get_status_display }}
-      </span>
-      <form method="post" action="/tables/{{ table.pk }}/status/">
-        {% csrf_token %}
-        <select name="status" class="form-select form-select-sm mb-2">
-          <option value="available" {% if table.status == 'available' %}selected{% endif %}>Available</option>
-          <option value="occupied"  {% if table.status == 'occupied'  %}selected{% endif %}>Occupied</option>
-          <option value="reserved"  {% if table.status == 'reserved'  %}selected{% endif %}>Reserved</option>
-        </select>
-        <button class="btn btn-sm btn-yasumi w-100">Update</button>
-      </form>
+{% for td in table_data %}
+{% with t=td.table order=td.order %}
+  <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+    <div class="card h-100" style="border-top:3px solid {% if not t.is_active %}var(--jp-border){% elif order %}var(--jp-torii){% else %}#5daa80{% endif %};">
+      <div class="card-body p-3 text-center">
+        <div style="font-size:1.6rem;opacity:.5;margin-bottom:6px;">🍱</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--jp-cream);">{{ t.name }}</div>
+        <div style="font-size:.72rem;color:var(--jp-mist);margin-bottom:8px;">{{ t.capacity }} seats</div>
+
+        {% if not t.is_active %}
+          <span class="badge" style="background:rgba(80,80,90,.2);color:#888;padding:3px 9px;border-radius:3px;font-size:.68rem;">Inactive</span>
+        {% elif order %}
+          <span class="badge" style="background:rgba(192,57,43,.15);color:#ff8080;padding:3px 9px;border-radius:3px;font-size:.68rem;">
+            <i class="bi bi-person-fill"></i> Occupied
+          </span>
+          <div style="font-size:.7rem;color:var(--jp-silver);margin-top:5px;">
+            <a href="{% url 'order_detail' order.id %}" class="link-gold">{{ order.order_no }}</a>
+          </div>
+          <div style="font-size:.72rem;color:var(--jp-gold);font-weight:600;">Rs. {{ order.grand_total }}</div>
+        {% else %}
+          <span class="badge" style="background:rgba(42,92,62,.2);color:#5daa80;padding:3px 9px;border-radius:3px;font-size:.68rem;">
+            <i class="bi bi-check-circle"></i> Free
+          </span>
+        {% endif %}
+      </div>
+      <div class="card-body border-top p-2" style="border-color:var(--jp-border) !important;">
+        <div style="display:flex;gap:5px;justify-content:center;">
+          <form method="post" action="{% url 'table_toggle' t.pk %}" style="display:inline;">{% csrf_token %}
+            <button class="btn btn-sm" title="{% if t.is_active %}Deactivate{% else %}Activate{% endif %}"
+              style="background:rgba(200,151,43,.08);color:var(--jp-gold);border:1px solid rgba(200,151,43,.25);font-size:.72rem;padding:4px 8px;">
+              <i class="bi bi-toggle-{% if t.is_active %}on{% else %}off{% endif %}"></i>
+            </button>
+          </form>
+          <a href="{% url 'table_edit' t.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.72rem;padding:4px 8px;"><i class="bi bi-pencil"></i></a>
+          <form method="post" action="{% url 'table_delete' t.pk %}" style="display:inline;"
+                onsubmit="return confirm('Delete table {{ t.name }}?')">{% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger" style="font-size:.72rem;padding:4px 8px;"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
+{% endwith %}
 {% empty %}
-  <div class="col-12 text-center text-muted py-5">No tables added yet. Add them from <a href="/admin/">Admin</a>.</div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-grid-3x3-gap" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:.3;"></i>
+        No tables yet. <a href="{% url 'table_add' %}" class="link-gold">Add the first table →</a>
+      </div>
+    </div>
+  </div>
 {% endfor %}
 </div>
 {% endblock %}

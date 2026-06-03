@@ -1,67 +1,131 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard · Yasumi{% endblock %}
+{% block title %}Dashboard · 休み Yasumi{% endblock %}
 {% block nav_dash %}active{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4 class="fw-bold mb-0" style="color:#1a1a1a">Dashboard</h4>
-  <span class="text-muted small">{% now "l, d M Y" %}</span>
-</div>
-<div class="row g-4 mb-4">
-  <div class="col-md-3">
-    <div class="card stat-card p-3" style="border-left:4px solid #c0392b">
-      <div class="text-muted small">Total Tables</div>
-      <div class="fs-2 fw-bold">{{ total_tables }}</div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card stat-card p-3" style="border-left:4px solid #e74c3c">
-      <div class="text-muted small">Occupied</div>
-      <div class="fs-2 fw-bold text-danger">{{ occupied_tables }}</div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card stat-card p-3" style="border-left:4px solid #e67e22">
-      <div class="text-muted small">Active Orders</div>
-      <div class="fs-2 fw-bold" style="color:#e67e22">{{ active_orders }}</div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card stat-card p-3" style="border-left:4px solid #27ae60">
-      <div class="text-muted small">Today's Revenue</div>
-      <div class="fs-2 fw-bold text-success">Rs. {{ today_revenue }}</div>
-    </div>
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-speedometer2 text-torii" style="margin-right:8px;"></i>Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="text-muted" style="font-size:.8rem;">{% now "l, d M Y" %}</span>
+    <a href="/" class="btn btn-yasumi btn-sm"><i class="bi bi-shop-window"></i> Open POS</a>
   </div>
 </div>
-<div class="card">
-  <div class="card-header d-flex justify-content-between">
-    <span>Recent Orders</span>
-    <a href="/orders/" style="color:#c0392b;font-size:0.85rem">View all →</a>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-silver);">
+      <div class="stat-label"><i class="bi bi-grid-3x3-gap"></i> Total Tables</div>
+      <div class="stat-value">{{ total_tables }}</div>
+      <div class="stat-sub"><a href="{% url 'table_list' %}" class="link-gold" style="font-size:.72rem;">Manage tables →</a></div>
+    </div>
   </div>
-  <table class="table mb-0">
-    <thead class="table-light">
-      <tr><th>#</th><th>Table</th><th>Status</th><th>Total</th><th>Time</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for order in recent_orders %}
-      <tr>
-        <td class="fw-semibold">#{{ order.id }}</td>
-        <td>Table {{ order.table.number }}</td>
-        <td><span class="badge rounded-pill
-          {% if order.status == 'pending' %}bg-warning text-dark
-          {% elif order.status == 'preparing' %}bg-info text-dark
-          {% elif order.status == 'served' %}bg-primary
-          {% elif order.status == 'completed' %}bg-success
-          {% else %}bg-secondary{% endif %}">
-          {{ order.get_status_display }}</span>
-        </td>
-        <td>Rs. {{ order.get_total }}</td>
-        <td class="text-muted">{{ order.created_at|time:"H:i" }}</td>
-        <td><a href="/orders/{{ order.id }}/" class="btn btn-sm btn-yasumi">View</a></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="text-center text-muted py-4">No orders yet today</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="col-xl-3 col-md-6">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-torii);">
+      <div class="stat-label" style="color:var(--jp-torii);"><i class="bi bi-person-fill"></i> Occupied</div>
+      <div class="stat-value" style="color:var(--jp-torii);">{{ occupied_tables }}</div>
+      <div class="stat-sub">Tables in use now</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-gold);">
+      <div class="stat-label" style="color:var(--jp-gold);"><i class="bi bi-receipt"></i> Active Orders</div>
+      <div class="stat-value" style="color:var(--jp-gold);">{{ active_orders }}</div>
+      <div class="stat-sub">Open, preparing, served</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="card stat-card" style="border-left:3px solid var(--jp-matcha-lt);">
+      <div class="stat-label" style="color:var(--jp-matcha-lt);"><i class="bi bi-cash-coin"></i> Today's Revenue</div>
+      <div class="stat-value" style="color:var(--jp-matcha-lt);font-size:1.5rem;">Rs. {{ today_revenue }}</div>
+      <div class="stat-sub"><a href="{% url 'reports_index' %}" class="link-gold" style="font-size:.72rem;">Full report →</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Recent Orders -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history text-gold" style="margin-right:6px;"></i>Recent Orders</span>
+        <a href="{% url 'order_list' %}" class="link-gold" style="font-size:.8rem;">View all →</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <thead>
+            <tr><th>Order No.</th><th>Type</th><th>Table</th><th>Status</th><th>Total</th><th>Time</th></tr>
+          </thead>
+          <tbody>
+            {% for order in recent_orders %}
+            <tr onclick="location.href='{% url 'order_detail' order.pk %}'" style="cursor:pointer;">
+              <td class="text-gold" style="font-weight:600;">{{ order.order_no }}</td>
+              <td class="text-silver" style="font-size:.78rem;">
+                {% if order.order_type == 'DINE_IN' %}🍽 Dine-in{% else %}🥡 Takeaway{% endif %}
+              </td>
+              <td class="text-silver">{{ order.table_no|default:"—" }}</td>
+              <td>
+                {% if order.status == 'OPEN' %}
+                  <span style="background:rgba(200,151,43,.15);color:#c8972b;padding:2px 8px;border-radius:3px;font-size:.72rem;">OPEN</span>
+                {% elif order.status == 'CONFIRMED' %}
+                  <span style="background:rgba(74,124,200,.15);color:#7ab0ff;padding:2px 8px;border-radius:3px;font-size:.72rem;">CONFIRMED</span>
+                {% elif order.status == 'PREPARING' %}
+                  <span style="background:rgba(180,100,20,.15);color:#d4801e;padding:2px 8px;border-radius:3px;font-size:.72rem;">PREPARING</span>
+                {% elif order.status == 'SERVED' %}
+                  <span style="background:rgba(90,60,200,.15);color:#a080ff;padding:2px 8px;border-radius:3px;font-size:.72rem;">SERVED</span>
+                {% elif order.status == 'PAID' %}
+                  <span style="background:rgba(42,92,62,.2);color:#5daa80;padding:2px 8px;border-radius:3px;font-size:.72rem;">PAID</span>
+                {% else %}
+                  <span style="background:rgba(80,80,90,.2);color:#888;padding:2px 8px;border-radius:3px;font-size:.72rem;">{{ order.status }}</span>
+                {% endif %}
+              </td>
+              <td>Rs. {{ order.grand_total }}</td>
+              <td class="text-muted" style="font-size:.78rem;">{{ order.created_at|time:"H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-moon-stars" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>
+                No orders yet today
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-lightning-charge text-gold" style="margin-right:6px;"></i>Quick Actions</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+        <a href="/" class="btn w-100" style="background:rgba(192,57,43,.1);color:var(--jp-torii);border:1px solid rgba(192,57,43,.3);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-shop-window" style="margin-right:8px;"></i>Open POS System
+        </a>
+        <a href="{% url 'menu_list' %}" class="btn w-100" style="background:rgba(200,151,43,.08);color:var(--jp-gold);border:1px solid rgba(200,151,43,.3);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-journal-text" style="margin-right:8px;"></i>Manage Menu
+        </a>
+        <a href="{% url 'table_list' %}" class="btn w-100" style="background:rgba(80,80,100,.1);color:var(--jp-silver);border:1px solid var(--jp-border);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-grid-3x3-gap" style="margin-right:8px;"></i>Manage Tables
+        </a>
+        <a href="{% url 'order_list' %}" class="btn w-100" style="background:rgba(80,80,100,.1);color:var(--jp-silver);border:1px solid var(--jp-border);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-receipt" style="margin-right:8px;"></i>View All Orders
+        </a>
+        <a href="{% url 'reports_index' %}" class="btn w-100" style="background:rgba(42,92,62,.1);color:#5daa80;border:1px solid rgba(93,170,128,.3);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-graph-up-arrow" style="margin-right:8px;"></i>Reports &amp; Analytics
+        </a>
+        <a href="{% url 'credit_list' %}" class="btn w-100" style="background:rgba(74,120,200,.08);color:#8ab0ff;border:1px solid rgba(74,120,200,.3);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-person-lines-fill" style="margin-right:8px;"></i>Credit Accounts
+        </a>
+        <a href="/admin/" class="btn w-100" style="background:rgba(80,80,100,.08);color:var(--jp-mist);border:1px solid var(--jp-border);font-size:.85rem;text-align:left;padding:10px 14px;">
+          <i class="bi bi-gear-fill" style="margin-right:8px;"></i>Admin Panel
+        </a>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

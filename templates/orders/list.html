@@ -1,35 +1,114 @@
 {% extends 'base.html' %}
-{% block title %}Orders{% endblock %}
+{% block title %}Orders · 休み Yasumi{% endblock %}
 {% block nav_orders %}active{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4>Orders</h4>
-  <a href="/orders/new/" class="btn btn-primary"><i class="bi bi-plus"></i> New Order</a>
+<div class="page-header">
+  <h1 class="page-title"><i class="bi bi-receipt text-torii" style="margin-right:8px;"></i>Orders</h1>
+  <a href="/" class="btn btn-yasumi btn-sm"><i class="bi bi-shop-window"></i> Open POS</a>
 </div>
+
+<!-- Filters -->
+<div class="card mb-3" style="padding:14px 18px;">
+  <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+    <div>
+      <label class="form-label mb-1" style="font-size:.72rem;">Order No. / Search</label>
+      <input type="text" name="q" class="form-control form-control-sm" value="{{ search }}" placeholder="YSM-…" style="width:160px;">
+    </div>
+    <div>
+      <label class="form-label mb-1" style="font-size:.72rem;">Status</label>
+      <select name="status" class="form-select form-select-sm" style="width:130px;">
+        <option value="">All</option>
+        {% for val,label in status_choices %}
+          <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label mb-1" style="font-size:.72rem;">Type</label>
+      <select name="type" class="form-select form-select-sm" style="width:120px;">
+        <option value="">All</option>
+        {% for val,label in type_choices %}
+          <option value="{{ val }}" {% if order_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label mb-1" style="font-size:.72rem;">From</label>
+      <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}" style="width:140px;">
+    </div>
+    <div>
+      <label class="form-label mb-1" style="font-size:.72rem;">To</label>
+      <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}" style="width:140px;">
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button type="submit" class="btn btn-yasumi btn-sm"><i class="bi bi-search"></i> Filter</button>
+      <a href="{% url 'order_list' %}" class="btn btn-sm btn-secondary">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Orders Table -->
 <div class="card">
-  <table class="table mb-0">
-    <thead class="table-light"><tr><th>#</th><th>Table</th><th>Status</th><th>Total</th><th>Time</th><th></th></tr></thead>
-    <tbody>
-    {% for order in orders %}
-    <tr>
-      <td>{{ order.id }}</td>
-      <td>Table {{ order.table.number }}</td>
-      <td><span class="badge
-        {% if order.status == 'pending' %}bg-warning
-        {% elif order.status == 'preparing' %}bg-info
-        {% elif order.status == 'served' %}bg-primary
-        {% elif order.status == 'completed' %}bg-success
-        {% else %}bg-secondary{% endif %}">
-        {{ order.get_status_display }}</span>
-      </td>
-      <td>Rs. {{ order.get_total }}</td>
-      <td>{{ order.created_at|date:"M d, H:i" }}</td>
-      <td><a href="/orders/{{ order.pk }}/" class="btn btn-sm btn-outline-primary">View</a></td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" class="text-center text-muted">No orders yet</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.84rem;">
+      <thead>
+        <tr>
+          <th>Order No.</th>
+          <th>Type</th>
+          <th>Table</th>
+          <th>Items</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th>Total</th>
+          <th>Time</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td style="font-weight:600;" class="text-gold">{{ order.order_no }}</td>
+          <td class="text-silver">
+            {% if order.order_type == 'DINE_IN' %}<i class="bi bi-grid-3x3-gap"></i> Dine-in
+            {% else %}<i class="bi bi-bag" style="color:var(--jp-amber);"></i> Takeaway{% endif %}
+          </td>
+          <td class="text-silver">{{ order.table_no|default:"—" }}</td>
+          <td class="text-muted">{{ order.items.count }}</td>
+          <td>
+            {% if order.status == 'OPEN' %}
+              <span class="badge" style="background:rgba(200,151,43,.15);color:#c8972b;padding:3px 8px;border-radius:3px;">OPEN</span>
+            {% elif order.status == 'CONFIRMED' %}
+              <span class="badge" style="background:rgba(74,124,200,.15);color:#7ab0ff;padding:3px 8px;border-radius:3px;">CONFIRMED</span>
+            {% elif order.status == 'PREPARING' %}
+              <span class="badge" style="background:rgba(180,100,20,.15);color:#d4801e;padding:3px 8px;border-radius:3px;">PREPARING</span>
+            {% elif order.status == 'SERVED' %}
+              <span class="badge" style="background:rgba(90,60,200,.15);color:#a080ff;padding:3px 8px;border-radius:3px;">SERVED</span>
+            {% elif order.status == 'PAID' %}
+              <span class="badge" style="background:rgba(42,92,62,.2);color:#5daa80;padding:3px 8px;border-radius:3px;">PAID</span>
+            {% elif order.status == 'CANCELLED' %}
+              <span class="badge" style="background:rgba(192,57,43,.12);color:#e07070;padding:3px 8px;border-radius:3px;">CANCELLED</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="text-muted" style="font-size:.75rem;">{{ order.payment_status }}</span>
+          </td>
+          <td style="font-weight:600;">Rs. {{ order.grand_total }}</td>
+          <td class="text-muted" style="font-size:.78rem;">{{ order.created_at|date:"d M, H:i" }}</td>
+          <td>
+            <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.72rem;">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center py-5 text-muted">
+            <i class="bi bi-receipt" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>
+            No orders found
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}

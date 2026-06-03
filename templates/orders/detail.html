@@ -1,55 +1,214 @@
 {% extends 'base.html' %}
-{% block title %}Order #{{ order.id }}{% endblock %}
+{% block title %}{{ order.order_no }} · Yasumi{% endblock %}
 {% block nav_orders %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    .sidebar, .page-header, .btn, .no-print { display: none !important; }
+    .main-content { padding: 0 !important; }
+    body, .card, .card-header, td, th { background: #fff !important; color: #000 !important; }
+    .card { border: 1px solid #ccc !important; }
+    .text-gold,.text-torii,.text-silver,.text-muted { color: #333 !important; }
+    .badge { border: 1px solid #333 !important; color: #000 !important; background: transparent !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4>Order #{{ order.id }} — Table {{ order.table.number }}</h4>
-  <a href="/orders/" class="btn btn-outline-secondary">← Back</a>
-</div>
-<div class="row">
-  <div class="col-md-8">
-    <div class="card mb-3">
-      <div class="card-header fw-bold">Items</div>
-      <table class="table mb-0">
-        <thead class="table-light"><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
-        <tbody>
-        {% for item in order.items.all %}
-        <tr>
-          <td>{{ item.menu_item.name }}</td>
-          <td>Rs. {{ item.price }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>Rs. {{ item.get_subtotal }}</td>
-        </tr>
-        {% endfor %}
-        <tr class="fw-bold">
-          <td colspan="3" class="text-end">Total</td>
-          <td>Rs. {{ order.get_total }}</td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-    {% if order.note %}
-    <div class="alert alert-info">📝 {{ order.note }}</div>
-    {% endif %}
+<div class="page-header no-print">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{% url 'order_list' %}" style="color:var(--jp-silver);text-decoration:none;font-size:.85rem;">
+      <i class="bi bi-arrow-left"></i> Orders
+    </a>
+    <span style="color:var(--jp-border);">/</span>
+    <h1 class="page-title" style="margin:0;">{{ order.order_no }}</h1>
   </div>
-  <div class="col-md-4">
+  <button onclick="window.print()" class="btn btn-sm" style="background:rgba(200,151,43,.1);color:var(--jp-gold);border:1px solid rgba(200,151,43,.3);">
+    <i class="bi bi-printer"></i> Print
+  </button>
+</div>
+
+<div class="row g-3">
+  <!-- Left column -->
+  <div class="col-lg-8">
+
+    <!-- Order info card -->
     <div class="card mb-3">
-      <div class="card-header fw-bold">Update Status</div>
+      <div class="card-header"><i class="bi bi-info-circle text-gold" style="margin-right:6px;"></i>Order Info</div>
       <div class="card-body">
-        <form method="post" action="/orders/{{ order.pk }}/status/">
-          {% csrf_token %}
-          <select name="status" class="form-select mb-2">
-            {% for val, label in order.Status.choices %}
-            <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-          <button class="btn btn-primary w-100">Update</button>
-        </form>
+        <div class="row g-3" style="font-size:.85rem;">
+          <div class="col-6 col-md-3">
+            <div style="color:var(--jp-silver);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Order No.</div>
+            <div style="font-weight:700;" class="text-gold">{{ order.order_no }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div style="color:var(--jp-silver);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Type</div>
+            <div>{% if order.order_type == 'DINE_IN' %}🍽 Dine-in{% else %}🥡 Takeaway{% endif %}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div style="color:var(--jp-silver);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Table</div>
+            <div>{{ order.table_no|default:"—" }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div style="color:var(--jp-silver);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Created</div>
+            <div class="text-muted">{{ order.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+          {% if order.notes %}
+          <div class="col-12">
+            <div style="color:var(--jp-silver);font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Notes</div>
+            <div class="text-muted">{{ order.notes }}</div>
+          </div>
+          {% endif %}
+        </div>
       </div>
     </div>
-    {% if order.status == 'served' %}
-    <a href="/billing/create/{{ order.pk }}/" class="btn btn-success w-100">Generate Invoice</a>
+
+    <!-- Items -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-list-ul text-gold" style="margin-right:6px;"></i>Order Items</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.85rem;">
+          <thead>
+            <tr><th>#</th><th>Item</th><th>Category</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Unit</th><th style="text-align:right;">Total</th></tr>
+          </thead>
+          <tbody>
+            {% for item in order.items.all %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td style="font-weight:500;">{{ item.product.name }}</td>
+              <td class="text-muted" style="font-size:.78rem;">{{ item.product.category.name|default:"—" }}</td>
+              <td style="text-align:center;font-weight:700;">{{ item.qty }}</td>
+              <td style="text-align:right;" class="text-silver">Rs. {{ item.unit_price }}</td>
+              <td style="text-align:right;font-weight:600;" class="text-gold">Rs. {{ item.line_total }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payments -->
+    {% if order.payments.exists %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-cash-coin text-gold" style="margin-right:6px;"></i>Payments</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.85rem;">
+          <thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Time</th></tr></thead>
+          <tbody>
+            {% for p in order.payments.all %}
+            <tr>
+              <td>
+                {% if p.method == 'CASH' %}<span style="color:#5daa80;">⊕ Cash</span>
+                {% elif p.method == 'FONEPAY' %}<span style="color:#8ab0ff;">⊕ FonePay</span>
+                {% else %}<span style="color:#b07fff;">⊕ {{ p.method }}</span>{% endif %}
+              </td>
+              <td style="font-weight:600;">Rs. {{ p.amount }}</td>
+              <td class="text-muted">{{ p.txn_ref|default:"—" }}</td>
+              <td class="text-muted" style="font-size:.78rem;">{{ p.paid_at|time:"H:i" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
     {% endif %}
-  </div>
+
+    <!-- Credit -->
+    {% if order.credit_records.exists %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-lines-fill text-gold" style="margin-right:6px;"></i>Credit Records</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.85rem;">
+          <thead><tr><th>Customer</th><th>Amount</th><th>Notes</th></tr></thead>
+          <tbody>
+            {% for cr in order.credit_records.all %}
+            <tr>
+              <td><a href="{% url 'credit_detail' cr.account.pk %}" class="link-gold">{{ cr.account.name }}</a></td>
+              <td style="font-weight:600;">Rs. {{ cr.amount }}</td>
+              <td class="text-muted">{{ cr.notes|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /col-lg-8 -->
+
+  <!-- Right column -->
+  <div class="col-lg-4">
+
+    <!-- Totals -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-calculator text-gold" style="margin-right:6px;"></i>Bill Summary</div>
+      <div class="card-body" style="font-size:.88rem;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;color:var(--jp-silver);">
+          <span>Subtotal</span><span>Rs. {{ order.subtotal }}</span>
+        </div>
+        {% if order.discount_amount %}
+        <div style="display:flex;justify-content:space-between;padding:4px 0;color:#5daa80;">
+          <span>Discount</span><span>− Rs. {{ order.discount_amount }}</span>
+        </div>
+        {% endif %}
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-weight:700;font-size:1.1rem;border-top:1px solid var(--jp-torii);margin-top:6px;">
+          <span>TOTAL</span><span class="text-gold">Rs. {{ order.grand_total }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status & actions -->
+    <div class="card no-print">
+      <div class="card-header"><i class="bi bi-activity text-gold" style="margin-right:6px;"></i>Status &amp; Actions</div>
+      <div class="card-body">
+        <div style="margin-bottom:16px;">
+          {% if order.status == 'OPEN' %}
+            <span style="background:rgba(200,151,43,.15);color:#c8972b;padding:7px 16px;border-radius:4px;font-weight:600;">● OPEN</span>
+          {% elif order.status == 'CONFIRMED' %}
+            <span style="background:rgba(74,124,200,.15);color:#7ab0ff;padding:7px 16px;border-radius:4px;font-weight:600;">● CONFIRMED</span>
+          {% elif order.status == 'PREPARING' %}
+            <span style="background:rgba(180,100,20,.15);color:#d4801e;padding:7px 16px;border-radius:4px;font-weight:600;">● PREPARING</span>
+          {% elif order.status == 'SERVED' %}
+            <span style="background:rgba(90,60,200,.15);color:#a080ff;padding:7px 16px;border-radius:4px;font-weight:600;">● SERVED</span>
+          {% elif order.status == 'PAID' %}
+            <span style="background:rgba(42,92,62,.2);color:#5daa80;padding:7px 16px;border-radius:4px;font-weight:600;">✓ PAID</span>
+          {% elif order.status == 'CANCELLED' %}
+            <span style="background:rgba(192,57,43,.12);color:#e07070;padding:7px 16px;border-radius:4px;font-weight:600;">✕ CANCELLED</span>
+          {% endif %}
+        </div>
+
+        {% if next_status and order.status != 'PAID' and order.status != 'CANCELLED' %}
+        <form method="post" action="{% url 'order_update_status' order.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="{{ next_status }}">
+          <button type="submit" class="btn w-100 mb-2" style="background:rgba(200,151,43,.1);color:var(--jp-gold);border:1px solid rgba(200,151,43,.3);font-size:.84rem;">
+            → {{ next_label.0 }}
+          </button>
+        </form>
+        {% endif %}
+
+        {% if order.status != 'PAID' and order.status != 'CANCELLED' %}
+        <form method="post" action="{% url 'order_update_status' order.pk %}"
+              onsubmit="return confirm('Cancel this order?')">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="CANCELLED">
+          <button type="submit" class="btn w-100" style="background:none;border:1px solid rgba(192,57,43,.35);color:#e07070;font-size:.82rem;">
+            <i class="bi bi-x-circle"></i> Cancel Order
+          </button>
+        </form>
+        {% endif %}
+
+        {% if order.status == 'OPEN' or order.status == 'CONFIRMED' or order.status == 'PREPARING' or order.status == 'SERVED' %}
+        <div style="margin-top:10px;">
+          <a href="/" class="btn w-100" style="background:rgba(42,92,62,.1);color:#5daa80;border:1px solid rgba(93,170,128,.3);font-size:.82rem;">
+            <i class="bi bi-shop-window"></i> Continue in POS
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div><!-- /col-lg-4 -->
 </div>
 {% endblock %}
