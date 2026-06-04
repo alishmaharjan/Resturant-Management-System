@@ -7,6 +7,9 @@ echo "────────────────────────�
 echo "▸ Running database migrations..."
 python manage.py migrate --noinput
 
+echo "▸ Seeding tables and menu (safe — skips existing data)..."
+python manage.py seed_yasumi
+
 echo "▸ Collecting static files..."
 python manage.py collectstatic --noinput --clear -v 0
 
