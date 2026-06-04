@@ -1,83 +1,338 @@
 {% extends 'base.html' %}
-{% block title %}Reports · 休み Yasumi{% endblock %}
+{% block title %}Reports · Yasumi{% endblock %}
 {% block nav_reports %}active{% endblock %}
 
 {% block extra_css %}
 <style>
-  .range-btn { padding:5px 14px;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--jp-border);background:transparent;color:var(--jp-silver);transition:all .14s; }
-  .range-btn.active, .range-btn:hover { background:var(--jp-torii);border-color:var(--jp-torii);color:#fff; }
+  /* ── Date range bar ── */
+  .range-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+  }
+
+  .range-presets {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .preset-btn {
+    padding: 5px 13px;
+    border-radius: 4px;
+    font-size: .78rem;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--silver);
+    transition: all .13s;
+    white-space: nowrap;
+  }
+  .preset-btn.active,
+  .preset-btn:hover {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+  }
+
+  .range-sep {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 0 4px;
+  }
+
+  .custom-dates {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .custom-dates label {
+    font-size: .72rem;
+    color: var(--silver);
+    white-space: nowrap;
+  }
+
+  .custom-dates input[type="date"] {
+    background: rgba(0,0,0,.25);
+    border: 1px solid var(--border);
+    color: var(--offwhite);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: .8rem;
+    color-scheme: dark;
+  }
+  .custom-dates input[type="date"]:focus {
+    border-color: var(--red);
+    outline: none;
+  }
+
+  .btn-apply {
+    padding: 5px 14px;
+    border-radius: 4px;
+    font-size: .78rem;
+    background: var(--red);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    transition: background .13s;
+    white-space: nowrap;
+  }
+  .btn-apply:hover { background: var(--red-d); }
+
+  /* ── Active range badge ── */
+  .range-badge {
+    margin-left: auto;
+    font-size: .72rem;
+    color: var(--silver);
+    white-space: nowrap;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  /* ── Export strip ── */
+  .export-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .export-label {
+    font-size: .66rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--silver);
+    white-space: nowrap;
+    margin-right: 2px;
+  }
+
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: .78rem;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,.03);
+    color: var(--silver);
+    text-decoration: none;
+    transition: all .14s;
+    white-space: nowrap;
+  }
+  .export-btn:hover {
+    background: rgba(192,57,43,.1);
+    border-color: rgba(192,57,43,.4);
+    color: var(--offwhite);
+  }
+
+  .btn-print {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: .78rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--silver);
+    cursor: pointer;
+    transition: all .14s;
+  }
+  .btn-print:hover { background: rgba(255,255,255,.05); color: var(--offwhite); }
+
+  @media print {
+    .no-print { display: none !important; }
+    .card { background: #fff !important; color: #000 !important; }
+    body, table, td, th { color: #000 !important; background: #fff !important; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header no-print">
   <h1 class="page-title"><i class="bi bi-graph-up-arrow text-torii" style="margin-right:8px;"></i>Reports</h1>
-  <!-- Range selector -->
-  <div style="display:flex;gap:6px;">
-    <a href="?range=today" class="range-btn {% if range_opt == 'today' %}active{% endif %}">Today</a>
-    <a href="?range=week"  class="range-btn {% if range_opt == 'week'  %}active{% endif %}">Last 7 Days</a>
-    <a href="?range=month" class="range-btn {% if range_opt == 'month' %}active{% endif %}">This Month</a>
-  </div>
 </div>
 
-<!-- Summary cards -->
+{# ── Date Range Bar ─────────────────────────────────────────────────────── #}
+<div class="range-bar no-print">
+  <div class="range-presets">
+    <button class="preset-btn {% if range_opt == 'today' %}active{% endif %}"
+            onclick="setPreset('today')">Today</button>
+    <button class="preset-btn {% if range_opt == 'week' %}active{% endif %}"
+            onclick="setPreset('week')">Last 7 Days</button>
+    <button class="preset-btn {% if range_opt == 'month' %}active{% endif %}"
+            onclick="setPreset('month')">This Month</button>
+    <button class="preset-btn {% if range_opt == 'custom' %}active{% endif %}"
+            onclick="showCustom(this)">Custom</button>
+  </div>
+
+  <div class="range-sep"></div>
+
+  <form id="rangeForm" method="get" class="custom-dates"
+        style="{% if range_opt != 'custom' %}display:none;{% endif %}">
+    <input type="hidden" name="range" value="custom">
+    <label>From</label>
+    <input type="date" name="date_from" id="inputFrom"
+           value="{{ date_from|date:'Y-m-d' }}" required>
+    <label>To</label>
+    <input type="date" name="date_to" id="inputTo"
+           value="{{ date_to|date:'Y-m-d' }}" required>
+    <button type="submit" class="btn-apply"><i class="bi bi-search"></i> Apply</button>
+  </form>
+
+  <span class="range-badge">
+    <i class="bi bi-calendar3"></i>
+    {{ date_from|date:"d M Y" }}{% if date_from != date_to %} → {{ date_to|date:"d M Y" }}{% endif %}
+  </span>
+</div>
+
+{# ── Export Strip ────────────────────────────────────────────────────────── #}
+<div class="export-strip no-print">
+  <span class="export-label"><i class="bi bi-download"></i> Download</span>
+
+  <a href="{% url 'export_sales' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+     class="export-btn">
+    <i class="bi bi-file-earmark-spreadsheet"></i> Sales
+  </a>
+  <a href="{% url 'export_items' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+     class="export-btn">
+    <i class="bi bi-file-earmark-spreadsheet"></i> Order Items
+  </a>
+  <a href="{% url 'export_products' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+     class="export-btn">
+    <i class="bi bi-file-earmark-spreadsheet"></i> Products Sold
+  </a>
+  <a href="{% url 'export_payments' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+     class="export-btn">
+    <i class="bi bi-file-earmark-spreadsheet"></i> Payments
+  </a>
+
+  <button class="btn-print" onclick="window.print()">
+    <i class="bi bi-printer"></i> Print
+  </button>
+</div>
+
+{# ── Summary Cards ────────────────────────────────────────────────────────── #}
 <div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="card stat-card" style="border-left:3px solid var(--jp-matcha-lt);">
-      <div class="stat-label"><i class="bi bi-cash-coin"></i> Revenue</div>
-      <div class="stat-value" style="color:var(--jp-matcha-lt);font-size:1.6rem;">Rs. {{ revenue|floatformat:2 }}</div>
-      <div class="stat-sub">{{ date_from }} → {{ today }}</div>
+    <div class="card stat-card" style="border-left:3px solid var(--green-l);">
+      <div class="stat-label" style="color:var(--green-l);"><i class="bi bi-cash-coin"></i> Revenue</div>
+      <div class="stat-value" style="color:var(--green-l);font-size:1.5rem;">
+        Rs. {{ revenue|floatformat:0 }}
+      </div>
+      <div class="stat-sub">{{ date_from|date:"d M Y" }}{% if date_from != date_to %} → {{ date_to|date:"d M Y" }}{% endif %}</div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card stat-card" style="border-left:3px solid var(--jp-gold);">
-      <div class="stat-label"><i class="bi bi-receipt"></i> Orders</div>
-      <div class="stat-value" style="color:var(--jp-gold);">{{ order_count }}</div>
-      <div class="stat-sub">Paid orders</div>
+    <div class="card stat-card" style="border-left:3px solid var(--red);">
+      <div class="stat-label" style="color:var(--red);"><i class="bi bi-receipt"></i> Paid Orders</div>
+      <div class="stat-value" style="color:var(--red);">{{ order_count }}</div>
+      <div class="stat-sub">Completed orders</div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card stat-card" style="border-left:3px solid var(--jp-silver);">
-      <div class="stat-label"><i class="bi bi-calculator"></i> Avg Order</div>
+    <div class="card stat-card" style="border-left:3px solid var(--silver);">
+      <div class="stat-label"><i class="bi bi-calculator"></i> Avg Order Value</div>
       <div class="stat-value">Rs. {{ avg_order|floatformat:0 }}</div>
-      <div class="stat-sub">Per order average</div>
+      <div class="stat-sub">Per order</div>
     </div>
   </div>
 </div>
 
+{# ── Charts Row ───────────────────────────────────────────────────────────── #}
 <div class="row g-3 mb-3">
 
-  <!-- Revenue Chart -->
   <div class="col-lg-7">
     <div class="card h-100">
-      <div class="card-header"><i class="bi bi-bar-chart-line text-gold" style="margin-right:6px;"></i>Revenue – Last 7 Days</div>
+      <div class="card-header">
+        <i class="bi bi-bar-chart-line text-torii" style="margin-right:6px;"></i>
+        Daily Revenue – Last 7 Days
+      </div>
       <div class="card-body" style="padding:16px;">
-        <canvas id="revenueChart" height="100"></canvas>
+        <canvas id="revenueChart" height="110"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Payment Breakdown -->
   <div class="col-lg-5">
     <div class="card h-100">
-      <div class="card-header"><i class="bi bi-pie-chart text-gold" style="margin-right:6px;"></i>Payment Methods</div>
-      <div class="card-body">
+      <div class="card-header">
+        <i class="bi bi-pie-chart text-torii" style="margin-right:6px;"></i>
+        Payment Methods
+      </div>
+      <div class="card-body" style="padding:14px 18px;">
         {% if pay_breakdown %}
           {% for p in pay_breakdown %}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--jp-border);">
-            <div>
-              {% if p.method == 'CASH' %}<span style="color:#5daa80;"><i class="bi bi-cash-coin"></i> Cash</span>
-              {% elif p.method == 'FONEPAY' %}<span style="color:#8ab0ff;"><i class="bi bi-qr-code"></i> FonePay</span>
-              {% elif p.method == 'ESEWA' %}<span style="color:#6fcf79;"><i class="bi bi-phone"></i> eSewa</span>
-              {% elif p.method == 'KHALTI' %}<span style="color:#b07fff;"><i class="bi bi-phone"></i> Khalti</span>
-              {% else %}<span class="text-silver">{{ p.method }}</span>{% endif %}
-              <span class="text-muted" style="font-size:.75rem;margin-left:6px;">× {{ p.count }}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;
+                      padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if p.method == 'CASH' %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(93,170,128,.15);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-cash-coin" style="color:#5daa80;font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">Cash</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% elif p.method == 'FONEPAY' %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(138,176,255,.12);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-qr-code" style="color:#8ab0ff;font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">FonePay</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% elif p.method == 'ESEWA' %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(93,170,128,.12);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-phone" style="color:#5daa80;font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">eSewa</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% elif p.method == 'KHALTI' %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(176,127,255,.12);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-phone" style="color:#b07fff;font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">Khalti</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% elif p.method == 'CREDIT' %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(122,176,239,.12);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-person-lines-fill" style="color:#7ab0ef;font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">Credit</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% else %}
+                <span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-credit-card" style="color:var(--silver);font-size:.9rem;"></i></span>
+                <div>
+                  <div style="font-size:.85rem;font-weight:600;color:#f0ece4;">{{ p.method }}</div>
+                  <div style="font-size:.7rem;color:var(--dim);">{{ p.count }} transaction{{ p.count|pluralize }}</div>
+                </div>
+              {% endif %}
             </div>
-            <div style="font-weight:700;color:var(--jp-cream);">Rs. {{ p.total|floatformat:0 }}</div>
+            <div style="text-align:right;">
+              <div style="font-size:.95rem;font-weight:700;color:#f0ece4;">Rs. {{ p.total|floatformat:0 }}</div>
+            </div>
           </div>
           {% endfor %}
         {% else %}
-          <div class="text-center text-muted py-4" style="font-size:.85rem;">No payments in this period</div>
+          <div class="text-center py-4" style="font-size:.85rem;color:var(--dim);">
+            No payment data for this period
+          </div>
         {% endif %}
       </div>
     </div>
@@ -85,28 +340,44 @@
 
 </div>
 
-<!-- Top Items -->
+{# ── Top Items ────────────────────────────────────────────────────────────── #}
 <div class="card mb-3">
-  <div class="card-header"><i class="bi bi-trophy text-gold" style="margin-right:6px;"></i>Top Selling Items</div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-trophy text-torii" style="margin-right:6px;"></i>Top Selling Items</span>
+    <a href="{% url 'export_products' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+       class="export-btn no-print" style="font-size:.72rem;">
+      <i class="bi bi-download"></i> CSV
+    </a>
+  </div>
   <div class="table-responsive">
-    <table class="table mb-0" style="font-size:.85rem;">
+    <table class="table mb-0" style="font-size:.84rem;">
       <thead>
-        <tr><th>#</th><th>Item</th><th>Category</th><th style="text-align:center;">Qty Sold</th><th style="text-align:right;">Revenue</th></tr>
+        <tr>
+          <th style="width:36px;">#</th>
+          <th>Item</th>
+          <th>Category</th>
+          <th style="text-align:center;">Qty Sold</th>
+          <th style="text-align:right;">Revenue</th>
+        </tr>
       </thead>
       <tbody>
         {% for item in top_items %}
         <tr>
-          <td style="color:{% if forloop.counter == 1 %}#d4af37{% elif forloop.counter == 2 %}#c0c0c0{% elif forloop.counter == 3 %}#cd7f32{% else %}var(--jp-mist){% endif %};font-weight:700;">
+          <td style="font-weight:700;color:
+            {% if forloop.counter == 1 %}#d4af37
+            {% elif forloop.counter == 2 %}#c0c0c0
+            {% elif forloop.counter == 3 %}#cd7f32
+            {% else %}var(--silver){% endif %};">
             {{ forloop.counter }}
           </td>
           <td style="font-weight:500;">{{ item.product__name }}</td>
           <td class="text-muted" style="font-size:.78rem;">{{ item.product__category__name|default:"—" }}</td>
           <td style="text-align:center;font-weight:600;">{{ item.qty }}</td>
-          <td style="text-align:right;font-weight:600;" class="text-gold">Rs. {{ item.revenue|floatformat:0 }}</td>
+          <td style="text-align:right;font-weight:600;">Rs. {{ item.revenue|floatformat:0 }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center text-muted py-3">No sales data for this period</td>
+          <td colspan="5" class="text-center text-muted py-3">No sales in this period</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -114,9 +385,12 @@
   </div>
 </div>
 
-<!-- Audit Log -->
-<div class="card">
-  <div class="card-header"><i class="bi bi-journal-check text-gold" style="margin-right:6px;"></i>Recent Activity Log</div>
+{# ── Audit Log ────────────────────────────────────────────────────────────── #}
+<div class="card no-print">
+  <div class="card-header">
+    <i class="bi bi-journal-check text-torii" style="margin-right:6px;"></i>
+    Recent Activity Log
+  </div>
   <div class="table-responsive">
     <table class="table mb-0" style="font-size:.82rem;">
       <thead>
@@ -136,8 +410,8 @@
           </td>
           <td style="font-weight:500;">{{ log.action }}</td>
           <td class="text-muted">{{ log.message }}</td>
-          <td class="text-muted" style="font-size:.75rem;">{{ log.reference_id|default:"—" }}</td>
-          <td class="text-muted" style="font-size:.75rem;white-space:nowrap;">{{ log.created_at|date:"d M, H:i" }}</td>
+          <td class="text-muted" style="font-size:.72rem;">{{ log.reference_id|default:"—" }}</td>
+          <td class="text-muted" style="font-size:.72rem;white-space:nowrap;">{{ log.created_at|date:"d M, H:i" }}</td>
         </tr>
         {% empty %}
         <tr>
@@ -153,18 +427,16 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const labels = {{ chart_labels|safe }};
-const data   = {{ chart_data|safe }};
-const ctx    = document.getElementById('revenueChart');
-new Chart(ctx, {
+/* ── Revenue chart ── */
+new Chart(document.getElementById('revenueChart'), {
   type: 'bar',
   data: {
-    labels: labels,
+    labels:   {{ chart_labels|safe }},
     datasets: [{
       label: 'Revenue (Rs.)',
-      data:  data,
-      backgroundColor: 'rgba(192,57,43,0.25)',
-      borderColor:     'rgba(192,57,43,0.9)',
+      data:  {{ chart_data|safe }},
+      backgroundColor: 'rgba(192,57,43,0.2)',
+      borderColor:     '#c0392b',
       borderWidth: 2,
       borderRadius: 4,
     }]
@@ -173,20 +445,29 @@ new Chart(ctx, {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => 'Rs. ' + ctx.parsed.y.toLocaleString()
-        }
-      }
+      tooltip: { callbacks: { label: c => 'Rs. ' + c.parsed.y.toLocaleString() } }
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8888aa' } },
+      x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#909090' } },
       y: {
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        ticks: { color: '#8888aa', callback: v => 'Rs. ' + v.toLocaleString() }
+        grid: { color: 'rgba(255,255,255,.04)' },
+        ticks: { color: '#909090', callback: v => 'Rs. ' + v.toLocaleString() }
       }
     }
   }
 });
+
+/* ── Preset buttons ── */
+function setPreset(range) {
+  window.location.href = '?range=' + range;
+}
+
+function showCustom(btn) {
+  const form = document.getElementById('rangeForm');
+  const show = form.style.display === 'none';
+  form.style.display = show ? '' : 'none';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  if (show) btn.classList.add('active');
+}
 </script>
 {% endblock %}

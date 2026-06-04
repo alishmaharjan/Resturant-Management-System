@@ -215,19 +215,30 @@ def api_order_detail(request, order_id):
 def api_add_item(request, order_id):
     body = _json(request)
     try:
-        order = Order.objects.get(pk=order_id)
+        order   = Order.objects.get(pk=order_id)
         product = MenuItem.objects.get(pk=body['product_id'], is_available=True)
     except (Order.DoesNotExist, MenuItem.DoesNotExist, KeyError):
         return _err('Not found', 404)
     if order.status in ['PAID', 'CANCELLED']:
         return _err('Cannot modify closed order')
-    qty = max(1, int(body.get('qty', 1)))
+
+    # delta can be negative (−1 = subtract, +1 = add)
+    delta    = int(body.get('qty', 1))
     existing = order.items.filter(product=product).first()
+
     if existing:
-        existing.qty += qty
-        existing.save()
+        new_qty = existing.qty + delta
+        if new_qty <= 0:
+            existing.delete()           # remove item when qty hits 0
+        else:
+            existing.qty = new_qty
+            existing.save()
     else:
-        OrderItem.objects.create(order=order, product=product, qty=qty, unit_price=product.price)
+        if delta > 0:                   # only create if adding, not subtracting
+            OrderItem.objects.create(
+                order=order, product=product, qty=delta, unit_price=product.price
+            )
+
     recompute_totals(order)
     return _ok(_order_payload(order))
 

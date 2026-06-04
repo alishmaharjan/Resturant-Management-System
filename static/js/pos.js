@@ -125,11 +125,18 @@ async function loadProducts(btn, catId) {
 function renderProducts() {
   const grid = document.getElementById('productGrid');
   if (!state.orderType && !state.selectedTable) {
-    grid.innerHTML = '<div style="color:#444;font-size:.85rem;padding:20px;grid-column:1/-1;">Select a table or takeaway to start.</div>';
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;
+                  height:calc(100vh - 120px);pointer-events:none;user-select:none;">
+        <div style="color:#555;font-size:.78rem;letter-spacing:2px;text-transform:uppercase;
+                    background:rgba(0,0,0,.5);padding:8px 18px;border-radius:20px;">
+          Select a table or Takeaway to begin
+        </div>
+      </div>`;
     return;
   }
   if (!state.products.length) {
-    grid.innerHTML = '<div style="color:#444;font-size:.85rem;padding:20px;grid-column:1/-1;">No items available.</div>';
+    grid.innerHTML = '<div style="color:#555;font-size:.85rem;padding:20px;grid-column:1/-1;text-align:center;">No items available.</div>';
     return;
   }
   grid.innerHTML = state.products.map(p => `
@@ -223,6 +230,14 @@ function renderCart() {
   if (hasPaid) document.getElementById('cartSub').textContent = '✅ PAID — Select new table';
 }
 
+// ── Discount ───────────────────────────────────────────────────────────────
+function applyDiscount() {
+  if (!state.currentOrder) return;
+  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const total = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
+  document.getElementById('tTotal').textContent = fmt(total);
+}
+
 // ── Single Payment Modal ───────────────────────────────────────────────────
 function openPay(method) {
   if (!state.currentOrder) return;
@@ -239,7 +254,6 @@ function openPay(method) {
   document.getElementById('qrFields').style.display     = method === 'FONEPAY' ? '' : 'none';
   document.getElementById('creditFields').style.display = method === 'CREDIT'  ? '' : 'none';
 
-  if (method === 'FONEPAY') document.getElementById('qrLabel').textContent = 'FonePay QR';
 
   document.getElementById('cashTendered').value = '';
   document.getElementById('changeBox').classList.add('d-none');
@@ -304,7 +318,8 @@ async function confirmPayment() {
 // ── Split Payment Modal ────────────────────────────────────────────────────
 function openSplit() {
   if (!state.currentOrder) return;
-  const total = parseFloat(state.currentOrder.grand_total);
+  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const total = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
   document.getElementById('splitTotal').textContent    = fmt(total);
   document.getElementById('splitCash').value           = '';
   document.getElementById('splitFonepay').value        = '';
@@ -318,7 +333,8 @@ function openSplit() {
 }
 
 function calcSplitRemainder() {
-  const total   = parseFloat(state.currentOrder?.grand_total || 0);
+  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const total   = Math.max(parseFloat(state.currentOrder?.grand_total || 0) - discount, 0);
   const cash    = parseFloat(document.getElementById('splitCash').value    || 0);
   const fonepay = parseFloat(document.getElementById('splitFonepay').value || 0);
   const credit  = parseFloat(document.getElementById('splitCredit').value  || 0);
@@ -329,7 +345,8 @@ function calcSplitRemainder() {
 
 async function confirmSplit() {
   if (!state.currentOrder) return;
-  const total    = parseFloat(state.currentOrder.grand_total);
+  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const total    = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
   const cash     = parseFloat(document.getElementById('splitCash').value    || 0);
   const fonepay  = parseFloat(document.getElementById('splitFonepay').value || 0);
   const credit   = parseFloat(document.getElementById('splitCredit').value  || 0);
@@ -349,7 +366,7 @@ async function confirmSplit() {
   try {
     const order = await api(`/api/orders/${state.currentOrder.id}/checkout/`, {
       method: 'POST',
-      body: JSON.stringify({payments, discount: 0})
+      body: JSON.stringify({payments, discount})
     });
     state.currentOrder = order;
     bootstrap.Modal.getInstance(document.getElementById('splitModal'))?.hide();
