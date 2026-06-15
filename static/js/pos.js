@@ -9,9 +9,14 @@ let state = {
 // ── Helpers ────────────────────────────────────────────────────────────────
 async function api(path, options={}) {
   const res = await fetch(path, {
+    credentials: 'same-origin',
     headers: {'Content-Type':'application/json', 'X-CSRFToken': getCsrf()},
     ...options
   });
+  if (res.status === 401) {
+    window.location.href = '/login/';
+    return;
+  }
   const data = await res.json();
   if (!data.success) throw new Error(data.message || 'Request failed');
   return data.data;
@@ -65,6 +70,11 @@ function renderTables() {
   `).join('');
 }
 
+function _resetDiscount() {
+  document.getElementById('discountInput').value = '';
+  document.getElementById('tTotal').textContent  = 'Rs. 0.00';
+}
+
 function selectTable(name, existingOrderId) {
   state.selectedTable = name;
   state.orderType = 'DINE_IN';
@@ -72,6 +82,7 @@ function selectTable(name, existingOrderId) {
   renderTables();
   document.getElementById('cartTitle').textContent = 'Table ' + name;
   document.getElementById('cartSub').textContent   = 'Dine In';
+  _resetDiscount();
   if (existingOrderId) {
     loadExistingOrder(existingOrderId);
   } else {
@@ -88,6 +99,7 @@ function selectTakeaway() {
   document.getElementById('takeawayBtn').classList.add('selected');
   document.getElementById('cartTitle').textContent = 'Takeaway';
   document.getElementById('cartSub').textContent   = 'Takeaway Order';
+  _resetDiscount();
   state.currentOrder = null;
   renderCart();
   renderProducts();
@@ -209,6 +221,8 @@ function renderCart() {
     container.innerHTML = '<div class="cart-empty"><i class="bi bi-cart3" style="font-size:2rem;display:block;margin-bottom:8px;color:#333;"></i>Cart is empty</div>';
     document.getElementById('tSubtotal').textContent = 'Rs. 0.00';
     document.getElementById('tTotal').textContent    = 'Rs. 0.00';
+    document.getElementById('discountInput').value   = '';
+    document.getElementById('discountInput').max     = '';
     return;
   }
 
@@ -224,8 +238,14 @@ function renderCart() {
     </div>
   `).join('');
 
+  // Set max discount = subtotal so browser validation catches it
+  document.getElementById('discountInput').max = order.subtotal;
+
   document.getElementById('tSubtotal').textContent = fmt(order.subtotal);
-  document.getElementById('tTotal').textContent    = fmt(order.grand_total);
+  // Respect any already-typed discount when re-rendering
+  const existingDiscount = parseFloat(document.getElementById('discountInput').value || 0);
+  const displayTotal = Math.max(parseFloat(order.grand_total) - existingDiscount, 0);
+  document.getElementById('tTotal').textContent = fmt(displayTotal);
 
   if (hasPaid) document.getElementById('cartSub').textContent = '✅ PAID — Select new table';
 }
@@ -233,17 +253,28 @@ function renderCart() {
 // ── Discount ───────────────────────────────────────────────────────────────
 function applyDiscount() {
   if (!state.currentOrder) return;
-  const discount = parseFloat(document.getElementById('discountInput').value || 0);
-  const total = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
+  const subtotal = parseFloat(state.currentOrder.subtotal || 0);
+  let discount   = parseFloat(document.getElementById('discountInput').value || 0);
+  if (discount > subtotal) {
+    discount = subtotal;
+    document.getElementById('discountInput').value = subtotal;
+  }
+  const total = Math.max(subtotal - discount, 0);
   document.getElementById('tTotal').textContent = fmt(total);
 }
 
 // ── Single Payment Modal ───────────────────────────────────────────────────
+function _getCartDiscount() {
+  const subtotal = parseFloat(state.currentOrder?.subtotal || 0);
+  const d = parseFloat(document.getElementById('discountInput').value || 0);
+  return Math.min(Math.max(d, 0), subtotal); // clamp 0..subtotal
+}
+
 function openPay(method) {
   if (!state.currentOrder) return;
   state.activePayMethod = method;
-  const discount    = parseFloat(document.getElementById('discountInput').value || 0);
-  const finalTotal  = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
+  const discount   = _getCartDiscount();
+  const finalTotal = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
 
   document.getElementById('payAmount').textContent = fmt(finalTotal);
   document.getElementById('payModalTitle').textContent =
@@ -254,22 +285,28 @@ function openPay(method) {
   document.getElementById('qrFields').style.display     = method === 'FONEPAY' ? '' : 'none';
   document.getElementById('creditFields').style.display = method === 'CREDIT'  ? '' : 'none';
 
-
   document.getElementById('cashTendered').value = '';
   document.getElementById('changeBox').classList.add('d-none');
   document.getElementById('txnRef').value      = '';
   document.getElementById('creditName').value  = '';
   document.getElementById('creditPhone').value = '';
   document.getElementById('creditNotes').value = '';
-  document.getElementById('modalDiscount').value = discount || '';
+
+  // Show discount as read-only info (no editable field)
+  const discountInfo = document.getElementById('discountInfo');
+  if (discount > 0) {
+    discountInfo.style.display = '';
+    document.getElementById('discountInfoAmt').textContent = '− ' + fmt(discount);
+  } else {
+    discountInfo.style.display = 'none';
+  }
 
   new bootstrap.Modal(document.getElementById('payModal')).show();
 }
 
 function calcChange() {
-  const total      = parseFloat(state.currentOrder?.grand_total || 0);
-  const discount   = parseFloat(document.getElementById('modalDiscount').value || 0);
-  const finalTotal = Math.max(total - discount, 0);
+  const discount   = _getCartDiscount();
+  const finalTotal = Math.max(parseFloat(state.currentOrder?.grand_total || 0) - discount, 0);
   const tendered   = parseFloat(document.getElementById('cashTendered').value || 0);
   const box        = document.getElementById('changeBox');
   if (tendered > 0) {
@@ -285,7 +322,7 @@ function calcChange() {
 async function confirmPayment() {
   if (!state.currentOrder) return;
   const method   = state.activePayMethod;
-  const discount = parseFloat(document.getElementById('modalDiscount').value || 0);
+  const discount = _getCartDiscount();
   const total    = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
   const payment  = {method, amount: total};
 
@@ -318,7 +355,7 @@ async function confirmPayment() {
 // ── Split Payment Modal ────────────────────────────────────────────────────
 function openSplit() {
   if (!state.currentOrder) return;
-  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const discount = _getCartDiscount();
   const total = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
   document.getElementById('splitTotal').textContent    = fmt(total);
   document.getElementById('splitCash').value           = '';
@@ -333,7 +370,7 @@ function openSplit() {
 }
 
 function calcSplitRemainder() {
-  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const discount = _getCartDiscount();
   const total   = Math.max(parseFloat(state.currentOrder?.grand_total || 0) - discount, 0);
   const cash    = parseFloat(document.getElementById('splitCash').value    || 0);
   const fonepay = parseFloat(document.getElementById('splitFonepay').value || 0);
@@ -345,7 +382,7 @@ function calcSplitRemainder() {
 
 async function confirmSplit() {
   if (!state.currentOrder) return;
-  const discount = parseFloat(document.getElementById('discountInput').value || 0);
+  const discount = _getCartDiscount();
   const total    = Math.max(parseFloat(state.currentOrder.grand_total) - discount, 0);
   const cash     = parseFloat(document.getElementById('splitCash').value    || 0);
   const fonepay  = parseFloat(document.getElementById('splitFonepay').value || 0);
@@ -376,24 +413,70 @@ async function confirmSplit() {
   } catch(e) { showErr(e.message); }
 }
 
+// ── Receipt Print ──────────────────────────────────────────────────────────
+function printReceipt() {
+  const content = document.getElementById('receiptBody').innerHTML;
+  const win = window.open('', '_blank', 'width=420,height=680,scrollbars=no');
+  if (!win) { window.print(); return; } // fallback if popup blocked
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Receipt · Yasumi</title>
+<style>
+  @page { margin: 6mm; size: 80mm auto; }
+  body {
+    margin: 0;
+    padding: 4px;
+    background: #fff;
+    font-family: 'Courier New', Courier, monospace;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  pre {
+    margin: 0;
+    font-size: 10pt;
+    line-height: 1.45;
+    color: #000 !important;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>${content}</body>
+</html>`);
+  win.document.close();
+  win.focus();
+  // small delay so fonts/content render before print dialog
+  setTimeout(() => { win.print(); win.close(); }, 350);
+}
+
 // ── Receipt ────────────────────────────────────────────────────────────────
 function showReceipt(order) {
   const now  = new Date();
   const ts   = now.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})
                + '  ' + now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
-  const W    = 32;
+  const W    = 36;
   const sep  = '─'.repeat(W);
   const lines = order.items.map(i => {
-    const name  = i.product_name.substring(0, 18);
-    const right = `x${i.qty}  ${fmt(i.line_total)}`;
-    return name.padEnd(W - right.length) + right;
+    const right  = ` x${i.qty}  ${fmt(i.line_total)}`;      // leading space guarantees gap
+    const maxLen = W - right.length;
+    const name   = i.product_name.length > maxLen
+                   ? i.product_name.substring(0, maxLen - 1) + '…'
+                   : i.product_name;
+    return name.padEnd(maxLen) + right;
   }).join('\n');
-  const payments = order.payments.map(p =>
-    p.method.padEnd(10) + fmt(p.amount).padStart(W - 10)
+  const discount  = parseFloat(order.discount_amount || 0);
+  const payments  = order.payments.map(p =>
+    p.method.padEnd(12) + fmt(p.amount).padStart(W - 12)
   ).join('\n');
 
+  const discountLine = discount > 0
+    ? `\n${'Discount'.padEnd(16)}${('- ' + fmt(discount)).padStart(W - 16)}`
+    : '';
+
   document.getElementById('receiptBody').innerHTML = `
-<pre style="color:#e8e0d0;margin:0;font-size:.78rem;line-height:1.55;">
+<pre style="color:#e8e0d0;margin:0;font-size:.78rem;line-height:1.55;font-family:'Courier New',monospace;">
 ${sep}
 ${'休  み  YASUMI'.padStart(Math.floor((W + 14) / 2)).padEnd(W)}
 ${'Japanese Restaurant'.padStart(Math.floor((W + 19) / 2)).padEnd(W)}
@@ -405,10 +488,9 @@ Table : ${order.table_no || '—'}
 ${sep}
 ${lines}
 ${sep}
-${'Subtotal'.padEnd(14)}${fmt(order.subtotal).padStart(W - 14)}
-${'Discount'.padEnd(14)}${fmt(order.discount_amount).padStart(W - 14)}
+${'Subtotal'.padEnd(16)}${fmt(order.subtotal).padStart(W - 16)}${discountLine}
 ${sep}
-${'TOTAL'.padEnd(14)}${fmt(order.grand_total).padStart(W - 14)}
+${'TOTAL'.padEnd(16)}${fmt(order.grand_total).padStart(W - 16)}
 ${sep}
 ${payments}
 ${sep}

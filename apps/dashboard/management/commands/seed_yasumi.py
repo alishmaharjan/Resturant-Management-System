@@ -13,11 +13,17 @@ User = get_user_model()
 
 # ── TABLES ────────────────────────────────────────────────────────────────────
 TABLES = [
-    ('T1', 4), ('T2', 4), ('T3', 4), ('T4', 4),
-    ('T5', 4), ('T6', 4), ('T7', 2), ('T8', 2),
-    ('T9', 6), ('T10', 6), ('T11', 8), ('T12', 8),
-    ('BAR-1', 2), ('BAR-2', 2), ('BAR-3', 2),
-    ('GARDEN-1', 4), ('GARDEN-2', 4), ('GARDEN-3', 4),
+    # Water tables — 4 tables, 4 seats each
+    ('WATER TABLE 1', 4), ('WATER TABLE 2', 4), ('WATER TABLE 3', 4), ('WATER TABLE 4', 4),
+    # Sofa tables — 6 tables, 6 seats each
+    ('SOFA TABLE 1', 6), ('SOFA TABLE 2', 6), ('SOFA TABLE 3', 6),
+    ('SOFA TABLE 4', 6), ('SOFA TABLE 5', 6), ('SOFA TABLE 6', 6),
+    # Japanese Cabin — 2 tables, 6 seats each
+    ('JAPANESE CABIN 1', 6), ('JAPANESE CABIN 2', 6),
+    # Japanese Hut — 1 table, 8 seats
+    ('JAPANESE HUT T1', 8),
+    # Normal tables — 2 tables, 4 seats each
+    ('NORMAL TABLE 1', 4), ('NORMAL TABLE 2', 4),
 ]
 
 # ── MENU  { category: [(name, price_Rs), ...] } ───────────────────────────────

@@ -27,6 +27,6 @@ else:
 "
 fi
 
-echo "▸ Starting development server on port 8000..."
+echo "▸ Starting server on port 8000..."
 echo "──────────────────────────────────────"
-exec python manage.py runserver 0.0.0.0:8000
+exec python manage.py runserver 0.0.0.0:8000 --noreload

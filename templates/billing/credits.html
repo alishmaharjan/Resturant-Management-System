@@ -5,9 +5,16 @@
 {% block content %}
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-person-lines-fill text-torii" style="margin-right:8px;"></i>Credit Accounts</h1>
-  <a href="{% url 'billing_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
-    <i class="bi bi-arrow-left"></i> Payments
-  </a>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <a href="{% url 'export_credit_summary' %}"
+       class="btn btn-sm"
+       style="background:rgba(93,170,128,.1);color:#5daa80;border:1px solid rgba(93,170,128,.3);">
+      <i class="bi bi-download"></i> Download Report
+    </a>
+    <a href="{% url 'billing_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+      <i class="bi bi-arrow-left"></i> Payments
+    </a>
+  </div>
 </div>
 
 {% if data %}

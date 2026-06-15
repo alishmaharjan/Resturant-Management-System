@@ -89,14 +89,12 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+@login_required(login_url='/login/')
 def pos_view(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
     return render(request, 'pos.html', {'user': request.user})
 
+@login_required(login_url='/login/')
 def dashboard_view(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
     if not request.user.is_staff:
         return redirect('pos')
 

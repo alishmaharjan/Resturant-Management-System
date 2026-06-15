@@ -74,3 +74,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
+
+# ── Session stability ──────────────────────────────────────────────────────
+SESSION_COOKIE_AGE = 86400 * 7        # 7 days (default is 2 weeks, this is explicit)
+SESSION_SAVE_EVERY_REQUEST = True      # refresh expiry on every page visit
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # survive browser restarts
+SESSION_COOKIE_HTTPONLY = True         # JS cannot read the session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'       # CSRF-safe; allows normal navigation

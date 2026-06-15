@@ -7,4 +7,5 @@ urlpatterns = [
     path('export/items/',       views.export_order_items_csv, name='export_items'),
     path('export/products/',    views.export_products_csv,    name='export_products'),
     path('export/payments/',    views.export_payments_csv,    name='export_payments'),
+    path('export/master/',      views.export_master_report,   name='export_master'),
 ]

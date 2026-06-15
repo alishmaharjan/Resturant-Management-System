@@ -200,9 +200,25 @@
   </span>
 </div>
 
+{# ── Master Report ───────────────────────────────────────────────────────── #}
+<div class="no-print" style="margin-bottom:14px;">
+  <a href="{% url 'export_master' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
+     style="display:inline-flex;align-items:center;gap:9px;padding:10px 22px;
+            background:linear-gradient(135deg,#2a5c3e,#3a7a54);color:#fff;
+            border-radius:6px;font-size:.88rem;font-weight:600;text-decoration:none;
+            border:1px solid #2a5c3e;box-shadow:0 2px 8px rgba(42,92,62,.35);
+            transition:all .15s;">
+    <i class="bi bi-file-earmark-excel" style="font-size:1.1rem;"></i>
+    Master Report (.xlsx)
+    <span style="font-size:.72rem;font-weight:400;opacity:.85;margin-left:2px;">
+      — all data in one Excel file
+    </span>
+  </a>
+</div>
+
 {# ── Export Strip ────────────────────────────────────────────────────────── #}
 <div class="export-strip no-print">
-  <span class="export-label"><i class="bi bi-download"></i> Download</span>
+  <span class="export-label"><i class="bi bi-download"></i> Other exports</span>
 
   <a href="{% url 'export_sales' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}"
      class="export-btn">
@@ -385,6 +401,70 @@
         {% empty %}
         <tr>
           <td colspan="5" class="text-center text-muted py-3">No sales in this period</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Refunds Table ───────────────────────────────────────────────────────── #}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>
+      <i class="bi bi-arrow-return-left text-torii" style="margin-right:6px;"></i>
+      Refunds in Period
+      {% if refund_count %}
+        <span style="margin-left:8px;font-size:.68rem;padding:2px 8px;border-radius:3px;
+                     background:rgba(192,57,43,.15);color:var(--red);">
+          {{ refund_count }} refund{{ refund_count|pluralize }}
+        </span>
+      {% endif %}
+    </span>
+    <span style="font-size:.95rem;font-weight:700;color:var(--red);">
+      {% if total_refunds %}− Rs. {{ total_refunds|floatformat:0 }}{% endif %}
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.83rem;">
+      <thead>
+        <tr>
+          <th>Order No.</th>
+          <th>Payment Method</th>
+          <th>Reason</th>
+          <th style="text-align:right;">Refund Amount</th>
+          <th style="white-space:nowrap;">Date &amp; Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent_refunds %}
+        <tr>
+          <td>
+            <a href="{% url 'order_detail' r.payment.order.pk %}" class="link-gold">
+              {{ r.payment.order.order_no }}
+            </a>
+          </td>
+          <td>
+            {% if r.payment.method == 'CASH' %}<span style="color:#5daa80;"><i class="bi bi-cash-coin"></i> Cash</span>
+            {% elif r.payment.method == 'FONEPAY' %}<span style="color:#8ab0ff;"><i class="bi bi-qr-code"></i> FonePay</span>
+            {% elif r.payment.method == 'ESEWA' %}<span style="color:#6fcf79;"><i class="bi bi-phone"></i> eSewa</span>
+            {% elif r.payment.method == 'KHALTI' %}<span style="color:#b07fff;"><i class="bi bi-phone"></i> Khalti</span>
+            {% else %}<span class="text-muted">{{ r.payment.method }}</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ r.reason|default:"—" }}</td>
+          <td style="text-align:right;font-weight:600;color:var(--red);">
+            − Rs. {{ r.amount|floatformat:2 }}
+          </td>
+          <td class="text-muted" style="font-size:.78rem;white-space:nowrap;">
+            {{ r.refunded_at|date:"d M Y, H:i" }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4" style="font-size:.84rem;">
+            <i class="bi bi-check-circle" style="font-size:1.4rem;display:block;margin-bottom:6px;opacity:.3;"></i>
+            No refunds in this period
+          </td>
         </tr>
         {% endfor %}
       </tbody>

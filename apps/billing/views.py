@@ -1,7 +1,11 @@
+import csv
+from datetime import date as date_type
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import HttpResponse
+from django.utils import timezone
 from django.db.models import Sum, Value, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.db.models import DecimalField
@@ -158,3 +162,69 @@ def credit_repay(request, pk):
         except (InvalidOperation, ValueError):
             messages.error(request, 'Enter a valid amount.')
     return redirect('credit_detail', pk=pk)
+
+
+@login_required(login_url='/login/')
+def export_credit_summary_csv(request):
+    """Download all credit accounts with balance summary."""
+    today = timezone.now().date()
+    accounts = CreditAccount.objects.prefetch_related('records').order_by('name')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename="yasumi_credit_summary_{today}.csv"'
+    )
+    w = csv.writer(response)
+    w.writerow(['Customer', 'Phone', 'Since', 'Total Credit (Rs.)',
+                'Total Repaid (Rs.)', 'Balance Due (Rs.)'])
+
+    grand_credit = grand_repaid = Decimal('0')
+    for acc in accounts:
+        tc = acc.records.filter(record_type='CREDIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        tr = acc.records.filter(record_type='REPAYMENT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        bal = tc - tr
+        grand_credit += tc
+        grand_repaid += tr
+        w.writerow([
+            acc.name,
+            acc.phone or '—',
+            acc.created_at.strftime('%Y-%m-%d'),
+            tc, tr, bal,
+        ])
+
+    w.writerow([])
+    w.writerow(['TOTAL', '', '', grand_credit, grand_repaid, grand_credit - grand_repaid])
+    return response
+
+
+@login_required(login_url='/login/')
+def export_credit_detail_csv(request, pk):
+    """Download full transaction history for one credit account."""
+    account = get_object_or_404(CreditAccount, pk=pk)
+    records = account.records.select_related('order').order_by('created_at')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename="yasumi_credit_{account.name}_{timezone.now().date()}.csv"'
+    )
+    w = csv.writer(response)
+    w.writerow([f'Credit Statement — {account.name}', '', '', '', ''])
+    w.writerow(['Phone', account.phone or '—', '', '', ''])
+    w.writerow([])
+    w.writerow(['Date', 'Type', 'Order No.', 'Notes', 'Amount (Rs.)'])
+
+    running = Decimal('0')
+    for r in records:
+        sign = 1 if r.record_type == 'CREDIT' else -1
+        running += sign * r.amount
+        w.writerow([
+            r.created_at.strftime('%Y-%m-%d %H:%M'),
+            r.record_type,
+            r.order.order_no if r.order else '—',
+            r.notes or '—',
+            r.amount if r.record_type == 'CREDIT' else f'-{r.amount}',
+        ])
+
+    w.writerow([])
+    w.writerow(['', '', '', 'Balance Due', running if running > 0 else 0])
+    return response
