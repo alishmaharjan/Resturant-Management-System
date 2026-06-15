@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Prefetch
 from django.utils import timezone
 from apps.orders.models import Order, OrderItem
-from apps.billing.models import Payment
+from apps.billing.models import Payment, Refund
 from apps.reports.models import AuditLog
 
 
@@ -53,6 +53,13 @@ def reports_index(request):
     order_count = agg['count']   or 0
     avg_order   = (revenue / order_count) if order_count else 0
 
+    refund_agg    = Refund.objects.filter(refunded_at__gte=start, refunded_at__lte=end).aggregate(
+        total=Sum('amount'), count=Count('id')
+    )
+    total_refunds = refund_agg['total'] or 0
+    refund_count  = refund_agg['count'] or 0
+    net_revenue   = revenue - total_refunds
+
     top_items = (
         OrderItem.objects
         .filter(order__status='PAID', order__created_at__gte=start)
@@ -85,17 +92,20 @@ def reports_index(request):
     audit_logs = AuditLog.objects.all()[:50]
 
     return render(request, 'reports/index.html', {
-        'range_opt':    range_opt,
-        'date_from':    date_from,
-        'date_to':      date_to,
-        'revenue':      revenue,
-        'order_count':  order_count,
-        'avg_order':    avg_order,
-        'top_items':    top_items,
+        'range_opt':     range_opt,
+        'date_from':     date_from,
+        'date_to':       date_to,
+        'revenue':       revenue,
+        'net_revenue':   net_revenue,
+        'total_refunds': total_refunds,
+        'refund_count':  refund_count,
+        'order_count':   order_count,
+        'avg_order':     avg_order,
+        'top_items':     top_items,
         'pay_breakdown': pay_breakdown,
-        'chart_labels': json.dumps(chart_labels),
-        'chart_data':   json.dumps(chart_data),
-        'audit_logs':   audit_logs,
+        'chart_labels':  json.dumps(chart_labels),
+        'chart_data':    json.dumps(chart_data),
+        'audit_logs':    audit_logs,
     })
 
 
@@ -242,4 +252,30 @@ def export_payments_csv(request):
         total += p.amount
     w.writerow([])
     w.writerow(['TOTAL', '', total, '', '', ''])
+
+    refunds = (
+        Refund.objects
+        .filter(refunded_at__gte=start, refunded_at__lte=end)
+        .select_related('payment__order')
+        .order_by('refunded_at')
+    )
+    if refunds.exists():
+        w.writerow([])
+        w.writerow(['--- REFUNDS ---', '', '', '', '', ''])
+        w.writerow(['Order No', 'Reason', 'Refund Amount (Rs.)', '', 'Date', 'Time'])
+        refund_total = 0
+        for r in refunds:
+            w.writerow([
+                r.payment.order.order_no,
+                r.reason or '—',
+                r.amount,
+                '',
+                r.refunded_at.strftime('%Y-%m-%d'),
+                r.refunded_at.strftime('%H:%M'),
+            ])
+            refund_total += r.amount
+        w.writerow([])
+        w.writerow(['REFUND TOTAL', '', refund_total, '', '', ''])
+        w.writerow(['NET TOTAL', '', total - refund_total, '', '', ''])
+
     return response

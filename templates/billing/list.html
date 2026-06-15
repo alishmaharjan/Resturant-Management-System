@@ -37,11 +37,25 @@
   </form>
 </div>
 
-<!-- Total -->
-<div class="card mb-3" style="padding:14px 18px;border-left:3px solid var(--jp-matcha-lt);">
-  <div style="display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--jp-silver);">Filtered Total Revenue</span>
-    <span style="font-size:1.3rem;font-weight:700;color:var(--jp-matcha-lt);">Rs. {{ total_amount }}</span>
+<!-- Totals Summary -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card" style="padding:14px 18px;border-left:3px solid var(--green-l);">
+      <div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--green-l);">Gross Revenue</div>
+      <div style="font-size:1.25rem;font-weight:700;color:var(--green-l);">Rs. {{ total_amount }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card" style="padding:14px 18px;border-left:3px solid var(--red);">
+      <div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--red);">Total Refunds</div>
+      <div style="font-size:1.25rem;font-weight:700;color:var(--red);">Rs. {{ total_refunds }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card" style="padding:14px 18px;border-left:3px solid var(--silver);">
+      <div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--silver);">Net Revenue</div>
+      <div style="font-size:1.25rem;font-weight:700;color:var(--offwhite);">Rs. {{ net_total }}</div>
+    </div>
   </div>
 </div>
 
@@ -49,7 +63,15 @@
   <div class="table-responsive">
     <table class="table mb-0" style="font-size:.85rem;">
       <thead>
-        <tr><th>Order No.</th><th>Method</th><th>Amount</th><th>Reference</th><th>Date &amp; Time</th></tr>
+        <tr>
+          <th>Order No.</th>
+          <th>Method</th>
+          <th>Amount</th>
+          <th>Refunded</th>
+          <th>Reference</th>
+          <th>Date &amp; Time</th>
+          <th style="width:90px;"></th>
+        </tr>
       </thead>
       <tbody>
         {% for p in payments %}
@@ -65,12 +87,37 @@
             {% else %}<span class="text-silver">{{ p.method }}</span>{% endif %}
           </td>
           <td style="font-weight:600;">Rs. {{ p.amount }}</td>
+          <td>
+            {% if p.refunded_total %}
+              <span style="color:var(--red);font-size:.8rem;font-weight:600;">
+                <i class="bi bi-arrow-return-left"></i> Rs. {{ p.refunded_total }}
+              </span>
+              {% if p.is_fully_refunded %}
+                <span class="badge" style="background:rgba(192,57,43,.15);color:var(--red);font-size:.65rem;padding:2px 6px;border-radius:3px;margin-left:4px;">FULL</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted" style="font-size:.78rem;">—</span>
+            {% endif %}
+          </td>
           <td class="text-muted" style="font-size:.78rem;">{{ p.txn_ref|default:"—" }}</td>
           <td class="text-muted" style="font-size:.78rem;">{{ p.paid_at|date:"d M Y, H:i" }}</td>
+          <td>
+            {% if not p.is_fully_refunded %}
+            <button type="button"
+                    class="btn btn-sm"
+                    style="font-size:.72rem;padding:3px 9px;border:1px solid rgba(192,57,43,.4);color:var(--red);background:rgba(192,57,43,.08);"
+                    data-bs-toggle="modal"
+                    data-bs-target="#refundModal{{ p.id }}">
+              <i class="bi bi-arrow-return-left"></i> Refund
+            </button>
+            {% else %}
+            <span style="font-size:.72rem;color:var(--dim);">Refunded</span>
+            {% endif %}
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center py-5 text-muted">
+          <td colspan="7" class="text-center py-5 text-muted">
             <i class="bi bi-cash-coin" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>
             No payment records found
           </td>
@@ -80,4 +127,75 @@
     </table>
   </div>
 </div>
+
+<!-- Refund Modals (one per payment) -->
+{% for p in payments %}
+{% if not p.is_fully_refunded %}
+<div class="modal fade" id="refundModal{{ p.id }}" tabindex="-1" aria-labelledby="refundModalLabel{{ p.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);">
+      <div class="modal-header">
+        <h5 class="modal-title" id="refundModalLabel{{ p.id }}">
+          <i class="bi bi-arrow-return-left text-torii" style="margin-right:6px;"></i>Issue Refund
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'refund_payment' p.id %}">
+        {% csrf_token %}
+        <div class="modal-body" style="font-size:.84rem;">
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--dim);">Order</span>
+              <span style="font-weight:600;">{{ p.order.order_no }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--dim);">Paid</span>
+              <span>Rs. {{ p.amount }}</span>
+            </div>
+            {% if p.refunded_total %}
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--dim);">Already refunded</span>
+              <span style="color:var(--red);">Rs. {{ p.refunded_total }}</span>
+            </div>
+            {% endif %}
+            <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;">
+              <span style="color:var(--dim);">Max refundable</span>
+              <span style="font-weight:700;color:var(--offwhite);">Rs. {{ p.refundable }}</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label mb-1" style="font-size:.75rem;color:var(--silver);">Refund Amount (Rs.)</label>
+            <input type="number"
+                   name="amount"
+                   class="form-control form-control-sm"
+                   placeholder="0.00"
+                   step="0.01"
+                   min="0.01"
+                   required
+                   style="background:rgba(0,0,0,.25);border-color:var(--border);color:var(--offwhite);">
+          </div>
+          <div>
+            <label class="form-label mb-1" style="font-size:.75rem;color:var(--silver);">Reason <span style="color:var(--dim);">(optional)</span></label>
+            <input type="text"
+                   name="reason"
+                   class="form-control form-control-sm"
+                   placeholder="e.g. Wrong item, Customer complaint…"
+                   maxlength="255"
+                   style="background:rgba(0,0,0,.25);border-color:var(--border);color:var(--offwhite);">
+          </div>
+        </div>
+        <div class="modal-footer" style="gap:8px;">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-yasumi">
+            <i class="bi bi-check-lg"></i> Confirm Refund
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
 {% endblock %}

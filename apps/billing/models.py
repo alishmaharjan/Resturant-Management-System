@@ -36,6 +36,20 @@ class CreditAccount(models.Model):
         return self.name
 
 
+class Refund(models.Model):
+    payment     = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name='refunds')
+    amount      = models.DecimalField(max_digits=12, decimal_places=2)
+    reason      = models.CharField(max_length=255, blank=True)
+    refunded_at = models.DateTimeField(default=timezone.now)
+    notes       = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-refunded_at']
+
+    def __str__(self):
+        return f'Refund Rs.{self.amount} — {self.payment}'
+
+
 class CreditRecord(models.Model):
     class RecordType(models.TextChoices):
         CREDIT    = 'CREDIT',    'Credit'

@@ -228,27 +228,34 @@
 
 {# ── Summary Cards ────────────────────────────────────────────────────────── #}
 <div class="row g-3 mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card stat-card" style="border-left:3px solid var(--green-l);">
-      <div class="stat-label" style="color:var(--green-l);"><i class="bi bi-cash-coin"></i> Revenue</div>
-      <div class="stat-value" style="color:var(--green-l);font-size:1.5rem;">
+      <div class="stat-label" style="color:var(--green-l);"><i class="bi bi-cash-coin"></i> Gross Revenue</div>
+      <div class="stat-value" style="color:var(--green-l);font-size:1.4rem;">
         Rs. {{ revenue|floatformat:0 }}
       </div>
       <div class="stat-sub">{{ date_from|date:"d M Y" }}{% if date_from != date_to %} → {{ date_to|date:"d M Y" }}{% endif %}</div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card stat-card" style="border-left:3px solid var(--red);">
-      <div class="stat-label" style="color:var(--red);"><i class="bi bi-receipt"></i> Paid Orders</div>
-      <div class="stat-value" style="color:var(--red);">{{ order_count }}</div>
-      <div class="stat-sub">Completed orders</div>
+      <div class="stat-label" style="color:var(--red);"><i class="bi bi-arrow-return-left"></i> Refunds</div>
+      <div class="stat-value" style="color:var(--red);font-size:1.4rem;">Rs. {{ total_refunds|floatformat:0 }}</div>
+      <div class="stat-sub">{{ refund_count }} refund{{ refund_count|pluralize }} in period</div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
+    <div class="card stat-card" style="border-left:3px solid var(--gold);">
+      <div class="stat-label" style="color:var(--gold);"><i class="bi bi-graph-up-arrow"></i> Net Revenue</div>
+      <div class="stat-value" style="color:var(--gold);font-size:1.4rem;">Rs. {{ net_revenue|floatformat:0 }}</div>
+      <div class="stat-sub">After refunds</div>
+    </div>
+  </div>
+  <div class="col-md-3">
     <div class="card stat-card" style="border-left:3px solid var(--silver);">
-      <div class="stat-label"><i class="bi bi-calculator"></i> Avg Order Value</div>
-      <div class="stat-value">Rs. {{ avg_order|floatformat:0 }}</div>
-      <div class="stat-sub">Per order</div>
+      <div class="stat-label"><i class="bi bi-receipt"></i> Orders / Avg</div>
+      <div class="stat-value" style="font-size:1.4rem;">{{ order_count }}</div>
+      <div class="stat-sub">Avg Rs. {{ avg_order|floatformat:0 }} per order</div>
     </div>
   </div>
 </div>
