@@ -11,13 +11,61 @@
        style="background:rgba(93,170,128,.1);color:#5daa80;border:1px solid rgba(93,170,128,.3);">
       <i class="bi bi-download"></i> Download Report
     </a>
-    <a href="{% url 'billing_list' %}" class="btn btn-sm" style="background:var(--jp-border);color:var(--jp-silver);border:none;">
-      <i class="bi bi-arrow-left"></i> Payments
+    <a href="{% url 'billing_list' %}" class="btn btn-sm"
+       style="background:var(--jp-border);color:var(--jp-silver);border:none;">
+      <i class="bi bi-arrow-left"></i> All Transactions
     </a>
   </div>
 </div>
 
+{% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" style="font-size:.85rem;" role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
 {% if data %}
+
+<!-- Summary strip -->
+{% with total_credit=0 total_balance=0 %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card" style="padding:12px 16px;border-left:3px solid var(--jp-torii);">
+      <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--jp-torii);margin-bottom:3px;">Accounts</div>
+      <div style="font-size:1.3rem;font-weight:700;color:var(--jp-offwhite);">{{ data|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card" style="padding:12px 16px;border-left:3px solid #f0a060;">
+      <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:#f0a060;margin-bottom:3px;">Total Credit</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#f0a060;">
+        Rs. {% for row in data %}{{ row.credit }}{% if not forloop.last %}+{% endif %}{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card" style="padding:12px 16px;border-left:3px solid #5daa80;">
+      <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:#5daa80;margin-bottom:3px;">Active Balances</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#5daa80;">
+        {{ data|length }} account{{ data|length|pluralize }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card" style="padding:12px 16px;border-left:3px solid var(--jp-gold);">
+      <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--jp-gold);margin-bottom:3px;">Outstanding Total</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--jp-gold);">
+        Rs. {% with ns=0 %}{% for row in data %}{% if row.balance > 0 %}{{ row.balance }}{% endif %}{% endfor %}{% endwith %}
+        <span style="font-size:.75rem;color:var(--jp-silver);font-weight:400;">combined</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endwith %}
+
 <div class="card">
   <div class="table-responsive">
     <table class="table mb-0" style="font-size:.86rem;">
@@ -28,21 +76,44 @@
           <th style="text-align:right;">Total Credit</th>
           <th style="text-align:right;">Total Repaid</th>
           <th style="text-align:right;">Balance Due</th>
-          <th></th>
+          <th style="text-align:right;width:200px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for row in data %}
         <tr>
-          <td style="font-weight:600;">{{ row.account.name }}</td>
-          <td class="text-muted">{{ row.account.phone|default:"—" }}</td>
-          <td style="text-align:right;color:var(--jp-torii);">Rs. {{ row.credit }}</td>
+          <td>
+            <a href="{% url 'credit_detail' row.account.pk %}" style="color:var(--jp-offwhite);font-weight:600;text-decoration:none;">
+              {{ row.account.name }}
+            </a>
+          </td>
+          <td class="text-muted" style="font-size:.8rem;">
+            {% if row.account.phone %}<i class="bi bi-telephone" style="margin-right:3px;"></i>{{ row.account.phone }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align:right;color:var(--jp-torii);font-weight:600;">Rs. {{ row.credit }}</td>
           <td style="text-align:right;color:#5daa80;">Rs. {{ row.repaid }}</td>
-          <td style="text-align:right;font-weight:700;{% if row.balance > 0 %}color:var(--jp-gold);{% else %}color:#5daa80;{% endif %}">
-            Rs. {{ row.balance }}
+          <td style="text-align:right;font-weight:700;">
+            {% if row.balance > 0 %}
+              <span style="color:var(--jp-gold);">Rs. {{ row.balance }}</span>
+            {% else %}
+              <span style="color:#5daa80;"><i class="bi bi-check-circle"></i> Settled</span>
+            {% endif %}
           </td>
           <td style="text-align:right;">
-            <a href="{% url 'credit_detail' row.account.pk %}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;">Detail</a>
+            <div style="display:flex;gap:6px;justify-content:flex-end;">
+              {% if row.balance > 0 %}
+              <button class="btn btn-sm"
+                style="font-size:.72rem;padding:3px 9px;background:rgba(93,170,128,.1);color:#5daa80;border:1px solid rgba(93,170,128,.35);"
+                onclick="openRepayModal({{ row.account.pk }}, '{{ row.account.name }}', '{{ row.balance }}')">
+                <i class="bi bi-cash-coin"></i> Repay
+              </button>
+              {% endif %}
+              <a href="{% url 'credit_detail' row.account.pk %}"
+                class="btn btn-sm"
+                style="font-size:.72rem;padding:3px 9px;background:rgba(255,255,255,.04);color:var(--jp-silver);border:1px solid var(--jp-border);">
+                <i class="bi bi-list-ul"></i> History
+              </a>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -50,6 +121,7 @@
     </table>
   </div>
 </div>
+
 {% else %}
 <div class="card">
   <div class="card-body text-center py-5 text-muted">
@@ -58,4 +130,58 @@
   </div>
 </div>
 {% endif %}
+
+<!-- ── Quick Repay Modal (single shared) ── -->
+<div class="modal fade" id="repayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+    <div class="modal-content" style="background:#181826;border:1px solid var(--jp-border);color:var(--jp-offwhite);">
+      <div class="modal-header" style="border-bottom:1px solid var(--jp-border);">
+        <h6 class="modal-title">
+          <i class="bi bi-cash-coin" style="color:#5daa80;margin-right:6px;"></i>Record Repayment
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="repayForm">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="credit_list">
+        <div class="modal-body">
+          <div class="mb-3 p-2" style="background:rgba(93,170,128,.07);border:1px solid rgba(93,170,128,.25);border-radius:6px;font-size:.85rem;">
+            <div>Customer: <strong id="repayCustomer">—</strong></div>
+            <div>Balance Due: <strong id="repayBalance" style="color:var(--jp-gold);">—</strong></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:.8rem;">Amount (Rs.) <span style="color:#e05252;">*</span></label>
+            <input type="number" name="amount" id="repayAmount" class="form-control"
+                   placeholder="0.00" step="0.01" min="0.01" required
+                   style="background:#0f0f1a;border:1px solid var(--jp-border);color:var(--jp-offwhite);">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.8rem;">Notes <span style="color:var(--jp-silver);">(optional)</span></label>
+            <input type="text" name="notes" class="form-control"
+                   placeholder="Cash, bank transfer, etc."
+                   style="background:#0f0f1a;border:1px solid var(--jp-border);color:var(--jp-offwhite);font-size:.85rem;">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--jp-border);">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm" style="background:#5daa80;color:#0f0f1a;font-weight:700;">
+            <i class="bi bi-check-lg"></i> Record Repayment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openRepayModal(accountPk, customerName, balance) {
+  document.getElementById('repayForm').action =
+    "{% url 'credit_repay' 0 %}".replace('/0/', '/' + accountPk + '/');
+  document.getElementById('repayCustomer').textContent = customerName;
+  document.getElementById('repayBalance').textContent  = 'Rs. ' + balance;
+  document.getElementById('repayAmount').value         = '';
+  document.getElementById('repayAmount').max           = balance;
+  new bootstrap.Modal(document.getElementById('repayModal')).show();
+}
+</script>
 {% endblock %}

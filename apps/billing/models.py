@@ -5,6 +5,7 @@ from django.utils import timezone
 class Payment(models.Model):
     class MethodChoices(models.TextChoices):
         CASH    = 'CASH',    'Cash'
+        CARD    = 'CARD',    'Card'
         FONEPAY = 'FONEPAY', 'FonePay'
         ESEWA   = 'ESEWA',   'eSewa'
         KHALTI  = 'KHALTI',  'Khalti'
@@ -54,6 +55,7 @@ class CreditRecord(models.Model):
     class RecordType(models.TextChoices):
         CREDIT    = 'CREDIT',    'Credit'
         REPAYMENT = 'REPAYMENT', 'Repayment'
+        WRITEOFF  = 'WRITEOFF',  'Write-off'
 
     account        = models.ForeignKey(CreditAccount, on_delete=models.PROTECT, related_name='records')
     record_type    = models.CharField(max_length=10, choices=RecordType.choices)

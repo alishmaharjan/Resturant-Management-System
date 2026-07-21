@@ -48,12 +48,14 @@ def _order_payload(order):
              for i in order.items.select_related('product').all()]
     payments = [{'method': p.method, 'amount': str(p.amount), 'txn_ref': p.txn_ref}
                 for p in order.payments.all()]
+    credit_records = [{'customer_name': cr.account.name, 'amount': str(cr.amount), 'notes': cr.notes}
+                      for cr in order.credit_records.select_related('account').filter(record_type='CREDIT')]
     return {'id': order.id, 'order_no': order.order_no, 'order_type': order.order_type,
             'table_no': order.table_no, 'status': order.status, 'subtotal': str(order.subtotal),
             'tax_amount': str(order.tax_amount), 'discount_amount': str(order.discount_amount),
             'grand_total': str(order.grand_total), 'payment_status': order.payment_status,
             'notes': order.notes, 'created_at': order.created_at.isoformat(),
-            'items': items, 'payments': payments}
+            'items': items, 'payments': payments, 'credit_records': credit_records}
 
 def api_auth(f):
     @wraps(f)
