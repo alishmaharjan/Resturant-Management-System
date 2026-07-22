@@ -10,9 +10,6 @@ python manage.py migrate --noinput
 echo "▸ Seeding tables and menu (safe — skips existing data)..."
 python manage.py seed_yasumi
 
-echo "▸ Collecting static files..."
-python manage.py collectstatic --noinput --clear -v 0
-
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
   echo "▸ Ensuring superuser exists..."
   python manage.py shell -c "
@@ -27,6 +24,6 @@ else:
 "
 fi
 
-echo "▸ Starting server on port 8000..."
+echo "▸ Starting server on port 8000 (auto-reload enabled)..."
 echo "──────────────────────────────────────"
-exec python manage.py runserver 0.0.0.0:8000 --noreload
+exec python manage.py runserver 0.0.0.0:8000
