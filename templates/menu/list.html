@@ -33,6 +33,29 @@
   </div>
 </div>
 
+<!-- Search Bar -->
+<div class="card mb-3" style="padding:12px 16px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="position:relative;flex:1;">
+      <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#666;font-size:.85rem;pointer-events:none;"></i>
+      <input type="text" id="menuSearchInput"
+             placeholder="Search items or categories…"
+             oninput="filterMenu(this.value)"
+             style="width:100%;padding:8px 12px 8px 34px;background:rgba(255,255,255,.04);
+                    border:1px solid var(--jp-border);border-radius:6px;color:var(--jp-offwhite);
+                    font-size:.85rem;font-family:inherit;outline:none;">
+    </div>
+    <button onclick="clearMenuSearch()"
+            id="menuSearchClear"
+            style="display:none;padding:7px 14px;background:rgba(255,255,255,.05);
+                   border:1px solid var(--jp-border);border-radius:6px;color:var(--jp-silver);
+                   font-size:.82rem;cursor:pointer;white-space:nowrap;">
+      <i class="bi bi-x-lg"></i> Clear
+    </button>
+  </div>
+  <div id="menuSearchSummary" style="font-size:.75rem;color:var(--jp-mist);margin-top:6px;display:none;"></div>
+</div>
+
 <!-- Categories + Items -->
 {% for cat in categories %}
 <div class="card mb-3">
@@ -116,4 +139,76 @@
   </div>
 </div>
 {% endfor %}
+
+<style>
+  #menuSearchInput:focus { border-color: var(--jp-torii); }
+  tr.menu-item-hidden { display: none; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.card.mb-3').forEach(function(card) {
+    card.dataset.menuCard = 'true';
+    const header = card.querySelector('.card-header span[style*="font-weight"]');
+    if (header) card.dataset.catName = header.textContent.trim().toLowerCase();
+    card.querySelectorAll('tbody tr').forEach(function(row) {
+      const td = row.querySelector('td:first-child');
+      if (td && td.getAttribute('colspan') !== '5')
+        row.dataset.itemName = td.textContent.trim().toLowerCase();
+    });
+  });
+});
+
+function filterMenu(q) {
+  q = (q || '').trim().toLowerCase();
+  const clear   = document.getElementById('menuSearchClear');
+  const summary = document.getElementById('menuSearchSummary');
+  clear.style.display = q ? '' : 'none';
+
+  let totalMatch = 0;
+  document.querySelectorAll('.card.mb-3[data-menu-card]').forEach(function(card) {
+    if (!q) {
+      card.style.display = '';
+      card.querySelectorAll('tbody tr').forEach(r => r.classList.remove('menu-item-hidden'));
+      return;
+    }
+    const catMatch = (card.dataset.catName || '').includes(q);
+    let itemMatch  = 0;
+
+    card.querySelectorAll('tbody tr').forEach(function(row) {
+      if (!row.dataset.itemName) { // empty-state row
+        row.classList.toggle('menu-item-hidden', !catMatch);
+        return;
+      }
+      const show = catMatch || row.dataset.itemName.includes(q);
+      row.classList.toggle('menu-item-hidden', !show);
+      if (show) itemMatch++;
+    });
+
+    const visible = catMatch || itemMatch > 0;
+    card.style.display = visible ? '' : 'none';
+    if (visible) totalMatch += catMatch
+      ? card.querySelectorAll('tbody tr[data-item-name]').length
+      : itemMatch;
+  });
+
+  summary.style.display = q ? '' : 'none';
+  if (q) summary.textContent = totalMatch + ' item' + (totalMatch !== 1 ? 's' : '') + ' found for "' + q + '"';
+}
+
+function clearMenuSearch() {
+  const inp = document.getElementById('menuSearchInput');
+  inp.value = '';
+  filterMenu('');
+  inp.focus();
+}
+
+document.addEventListener('keydown', function(e) {
+  const active = document.activeElement.tagName;
+  if (e.key === '/' && active !== 'INPUT' && active !== 'TEXTAREA') {
+    e.preventDefault();
+    document.getElementById('menuSearchInput').focus();
+  }
+});
+</script>
 {% endblock %}

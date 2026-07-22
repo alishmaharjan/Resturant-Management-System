@@ -546,10 +546,10 @@ function buildReceiptHTML(order) {
 
   return `
 <div class="rc-wrap">
-  <div class="rc-c rc-b" style="font-size:10.5pt;">Yasumi Japanese Restaurant Pvt. Ltd.</div>
+  <div class="rc-c rc-b" style="font-size:10.5pt;">Yasumi Restaurant</div>
   <div class="rc-c">Durbarmarg, Kathmandu</div>
-  <div class="rc-c">VAT No. : 610496989</div>
-  <div class="rc-c">Contact : 01-4444444</div>
+  <div class="rc-c">PAN No. : 155481134</div>
+  <div class="rc-c">Contact : 015904266</div>
   <div class="rc-dsolid"></div>
   <div class="rc-c rc-b" style="letter-spacing:.5px;">ABBREVIATED TAX INVOICE</div>
   <div class="rc-dsolid"></div>
